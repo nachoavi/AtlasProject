@@ -3,3 +3,4 @@ export * from './rut.js';
 export * from './pricing.js';
 export * from './constants.js';
 export * from './catalog.js';
+export * from './schemas/index.js';

@@ -8,6 +8,10 @@ import { ZodError } from 'zod';
 import { env } from './env.js';
 import { logger } from './lib/logger.js';
 import { CENTER_INFO, DEFAULT_OPERATING_HOURS } from '@atlas/shared';
+import { authRouter } from './routes/auth.routes.js';
+import { meRouter } from './routes/me.routes.js';
+import { plansRouter } from './routes/plans.routes.js';
+import { apiLimiter } from './middlewares/rateLimit.js';
 
 export function createApp(): Express {
   const app = express();
@@ -33,6 +37,13 @@ export function createApp(): Express {
       operatingHours: DEFAULT_OPERATING_HOURS,
     });
   });
+
+  // Rutas con rate-limit general
+  app.use(apiLimiter);
+
+  app.use('/auth', authRouter);
+  app.use('/me', meRouter);
+  app.use('/plans', plansRouter);
 
   app.use((_req, res) => {
     res.status(404).json({ error: 'NOT_FOUND' });
