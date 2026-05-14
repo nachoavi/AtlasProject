@@ -5,6 +5,11 @@ import { RegisterPage } from './routes/auth/RegisterPage';
 import { ForgotPasswordPage } from './routes/auth/ForgotPasswordPage';
 import { DashboardPlaceholder } from './routes/app/DashboardPlaceholder';
 import { RequireAuth } from './components/auth/RequireAuth';
+import { RequireRole } from './components/auth/RequireRole';
+import { StaffLayout } from './routes/staff/StaffLayout';
+import { StaffDashboard } from './routes/staff/StaffDashboard';
+import { EnrollWizard } from './routes/staff/EnrollWizard';
+import { CashRegister } from './routes/staff/CashRegister';
 
 export function App() {
   return (
@@ -21,6 +26,18 @@ export function App() {
           </RequireAuth>
         }
       />
+      <Route
+        path="/staff"
+        element={
+          <RequireRole roles={['STAFF', 'ADMIN']}>
+            <StaffLayout />
+          </RequireRole>
+        }
+      >
+        <Route index element={<StaffDashboard />} />
+        <Route path="inscribir" element={<EnrollWizard />} />
+        <Route path="caja" element={<CashRegister />} />
+      </Route>
       <Route
         path="*"
         element={

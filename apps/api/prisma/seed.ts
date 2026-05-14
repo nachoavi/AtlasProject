@@ -1,4 +1,5 @@
-import { PrismaClient, PlanSegment, SessionPackVariant, ServiceType } from '@prisma/client';
+import { PrismaClient, PlanSegment, SessionPackVariant, ServiceType, UserRole } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -300,6 +301,23 @@ async function main() {
   console.log(
     `  ℹ ServiceTypes disponibles: ${Object.values(ServiceType).join(', ')} (se asignan via Professional)`,
   );
+
+  // Usuario STAFF para que recepción pueda hacer login en /staff
+  const staffEmail = 'recepcion@atlas.local';
+  const staffPassword = 'AtlasRecepcion2026';
+  const staffHash = await bcrypt.hash(staffPassword, 12);
+  await prisma.user.upsert({
+    where: { email: staffEmail },
+    create: {
+      email: staffEmail,
+      passwordHash: staffHash,
+      fullName: 'Recepción Atlas',
+      role: UserRole.STAFF,
+      profile: { create: {} },
+    },
+    update: { passwordHash: staffHash, role: UserRole.STAFF },
+  });
+  console.log(`  ✓ Usuario STAFF: ${staffEmail} / ${staffPassword}`);
 
   console.log('✨ Seed completado.');
 }

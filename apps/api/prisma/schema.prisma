@@ -64,6 +64,7 @@ model User {
   assignmentsCreated  AssignedRoutine[]       @relation("RoutineAssigner")
   workshopsInstructed WorkshopSession[]       @relation("WorkshopInstructor")
   auditLogs           AuditLog[]              @relation("AuditActor")
+  paymentsCollected   Payment[]               @relation("PaymentCollector")
 
   @@index([role])
   @@index([status])
@@ -267,6 +268,14 @@ model SessionParticipant {
 
 enum PaymentProvider {
   WEBPAY
+  MANUAL // pago registrado en recepción
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+  CARD_EXTERNAL // tarjeta vía POS externo (no Webpay)
+  OTHER
 }
 
 enum PaymentStatus {
@@ -286,22 +295,27 @@ enum PaymentTarget {
 model Payment {
   id            String          @id @default(cuid())
   userId        String
-  provider      PaymentProvider @default(WEBPAY)
+  provider      PaymentProvider // valor explícito siempre (MANUAL en v1, WEBPAY futuro)
+  method        PaymentMethod?  // requerido cuando provider = MANUAL
   providerTxId  String          @unique
   amountClp     Int
   status        PaymentStatus   @default(PENDING)
   target        PaymentTarget
   targetRef     String?         // id del objeto pagado (subscription/pack/etc.)
   raw           Json?
+  notes         String?         // observaciones de recepción
+  collectedById String?         // staff que procesó el pago manual
   completedAt   DateTime?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
+  collectedBy  User?            @relation("PaymentCollector", fields: [collectedById], references: [id])
   subscription Subscription?
   sessionPack  UserSessionPack?
 
   @@index([userId])
   @@index([status])
+  @@index([collectedById, createdAt])
 }
 
 // =====================================================================

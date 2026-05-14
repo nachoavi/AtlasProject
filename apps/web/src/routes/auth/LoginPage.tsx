@@ -24,8 +24,9 @@ export function LoginPage() {
   const onSubmit = handleSubmit(async (data) => {
     setSubmitting(true);
     try {
-      await login(data);
-      const next = (location.state as { from?: string } | null)?.from ?? '/app';
+      const { user } = await login(data);
+      const fallback = user.role === 'STAFF' || user.role === 'ADMIN' ? '/staff' : '/app';
+      const next = (location.state as { from?: string } | null)?.from ?? fallback;
       navigate(next, { replace: true });
     } catch (err) {
       if (err instanceof ApiError) {

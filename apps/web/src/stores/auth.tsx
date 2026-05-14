@@ -14,8 +14,8 @@ export type AuthUser = {
 type AuthState = {
   user: AuthUser | null;
   loading: boolean;
-  register: (input: RegisterInput) => Promise<void>;
-  login: (input: LoginInput) => Promise<void>;
+  register: (input: RegisterInput) => Promise<{ user: AuthUser }>;
+  login: (input: LoginInput) => Promise<{ user: AuthUser }>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
 };
@@ -60,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     setAccessToken(data.accessToken);
     setUser(data.user);
+    return { user: data.user };
   }, []);
 
   const login = useCallback<AuthState['login']>(async (input) => {
@@ -70,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     setAccessToken(data.accessToken);
     setUser(data.user);
+    return { user: data.user };
   }, []);
 
   const logout = useCallback<AuthState['logout']>(async () => {

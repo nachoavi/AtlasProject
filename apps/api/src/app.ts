@@ -11,6 +11,7 @@ import { CENTER_INFO, DEFAULT_OPERATING_HOURS } from '@atlas/shared';
 import { authRouter } from './routes/auth.routes.js';
 import { meRouter } from './routes/me.routes.js';
 import { plansRouter } from './routes/plans.routes.js';
+import { staffRouter } from './routes/staff.routes.js';
 import { apiLimiter } from './middlewares/rateLimit.js';
 
 export function createApp(): Express {
@@ -44,6 +45,7 @@ export function createApp(): Express {
   app.use('/auth', authRouter);
   app.use('/me', meRouter);
   app.use('/plans', plansRouter);
+  app.use('/staff', staffRouter);
 
   app.use((_req, res) => {
     res.status(404).json({ error: 'NOT_FOUND' });
