@@ -1,0 +1,312 @@
+import { PrismaClient, PlanSegment, SessionPackVariant, ServiceType } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+// =====================================================
+// PLANES MENSUALES — fuente: plan §3.1
+// =====================================================
+const PLANS = [
+  {
+    code: 'ATLAS_INICIAL',
+    name: 'Atlas Inicial',
+    priceClp: 43_000,
+    daysPerWeek: 2,
+    workshopDiscountPct: 10,
+    eventDiscountPct: 0,
+    segment: PlanSegment.GENERAL,
+    displayOrder: 1,
+    perks: [
+      'Acceso a todas las zonas de entrenamiento 2 veces por semana',
+      'Evaluación física inicial gratuita',
+      'Semi-asistencia en sala',
+      '10% de descuento en clases dirigidas',
+    ],
+  },
+  {
+    code: 'ATLAS_AVANZADO',
+    name: 'Atlas Avanzado',
+    priceClp: 53_000,
+    daysPerWeek: 3,
+    workshopDiscountPct: 15,
+    eventDiscountPct: 0,
+    segment: PlanSegment.GENERAL,
+    displayOrder: 2,
+    perks: [
+      'Acceso a todas las zonas de entrenamiento 3 veces por semana',
+      'Evaluación física inicial gratuita',
+      'Semi-asistencia en sala',
+      '15% de descuento en clases dirigidas',
+    ],
+  },
+  {
+    code: 'ATLAS_ASCENSO',
+    name: 'Atlas Ascenso',
+    priceClp: 59_500,
+    daysPerWeek: 4,
+    workshopDiscountPct: 15,
+    eventDiscountPct: 0,
+    segment: PlanSegment.GENERAL,
+    displayOrder: 3,
+    perks: [
+      'Acceso a todas las zonas de entrenamiento 4 veces por semana',
+      'Evaluación física inicial gratuita',
+      'Semi-asistencia en sala',
+      '15% de descuento en clases dirigidas',
+    ],
+  },
+  {
+    code: 'ATLAS_ELITE',
+    name: 'Atlas Élite',
+    priceClp: 65_000,
+    daysPerWeek: 6,
+    workshopDiscountPct: 20,
+    eventDiscountPct: 20,
+    segment: PlanSegment.GENERAL,
+    displayOrder: 4,
+    perks: [
+      'Acceso a todas las zonas de entrenamiento 6 veces por semana',
+      'Evaluación física inicial gratuita',
+      'Evaluación kinesiológica o nutricional gratuita',
+      'Semi-asistencia en sala',
+      '20% de descuento en clases dirigidas',
+      '20% de descuento en eventos especiales',
+    ],
+  },
+  {
+    code: 'FORMACION_2D',
+    name: 'Atlas En Formación · 2 días',
+    priceClp: 35_000,
+    daysPerWeek: 2,
+    workshopDiscountPct: 5,
+    eventDiscountPct: 0,
+    segment: PlanSegment.ESTUDIANTE,
+    displayOrder: 5,
+    perks: [
+      'Acceso a todas las zonas de entrenamiento 2 veces por semana',
+      'Evaluación física inicial gratuita',
+      'Semi-asistencia en sala',
+      '5% de descuento en clases dirigidas',
+    ],
+  },
+  {
+    code: 'FORMACION_3D',
+    name: 'Atlas En Formación · 3 días',
+    priceClp: 42_000,
+    daysPerWeek: 3,
+    workshopDiscountPct: 5,
+    eventDiscountPct: 0,
+    segment: PlanSegment.ESTUDIANTE,
+    displayOrder: 6,
+    perks: [
+      'Acceso a todas las zonas de entrenamiento 3 veces por semana',
+      'Evaluación física inicial gratuita',
+      'Semi-asistencia en sala',
+      '5% de descuento en clases dirigidas',
+    ],
+  },
+  {
+    code: 'FORMACION_6D',
+    name: 'Atlas En Formación · 6 días',
+    priceClp: 49_000,
+    daysPerWeek: 6,
+    workshopDiscountPct: 5,
+    eventDiscountPct: 0,
+    segment: PlanSegment.ESTUDIANTE,
+    displayOrder: 7,
+    perks: [
+      'Acceso a todas las zonas de entrenamiento 6 veces por semana',
+      'Evaluación física inicial gratuita',
+      'Evaluación nutricional o kinesiológica inicial gratuita',
+      'Semi-asistencia en sala',
+      '5% de descuento en clases dirigidas',
+    ],
+  },
+] as const;
+
+// =====================================================
+// SESSION PACKS — Atlas Legión y Atlas Transforma
+// =====================================================
+const LEGION_PERKS = [
+  'Planificación de entrenamiento por objetivos',
+  'Grupos de 2 a 3 personas',
+  'Evaluación nutricional o kinesiológica inicial gratuita',
+  '10% de descuento en clases dirigidas y eventos especiales',
+];
+
+const TRANSFORMA_PERKS = [
+  'Sesiones personalizadas 1:1 de 1 hora',
+  'Planificación de entrenamiento por objetivos',
+  'Evaluación nutricional o kinesiológica inicial gratuita',
+  '10% de descuento en clases dirigidas y eventos especiales',
+];
+
+const SESSION_PACKS = [
+  { code: 'LEGION_4', sessionsTotal: 4, priceClp: 35_000, displayOrder: 1 },
+  { code: 'LEGION_8', sessionsTotal: 8, priceClp: 60_000, displayOrder: 2 },
+  { code: 'LEGION_12', sessionsTotal: 12, priceClp: 80_000, displayOrder: 3 },
+  { code: 'LEGION_16', sessionsTotal: 16, priceClp: 100_000, displayOrder: 4 },
+].map((p) => ({
+  ...p,
+  name: `Atlas Legión — ${p.sessionsTotal} sesiones`,
+  variant: SessionPackVariant.LEGION,
+  groupSizeMin: 2,
+  groupSizeMax: 3,
+  perks: LEGION_PERKS,
+}));
+
+const TRANSFORMA_PACKS = [
+  { code: 'TRANSFORMA_4', sessionsTotal: 4, priceClp: 55_000, displayOrder: 5 },
+  { code: 'TRANSFORMA_8', sessionsTotal: 8, priceClp: 95_000, displayOrder: 6 },
+  { code: 'TRANSFORMA_12', sessionsTotal: 12, priceClp: 130_000, displayOrder: 7 },
+  { code: 'TRANSFORMA_16', sessionsTotal: 16, priceClp: 160_000, displayOrder: 8 },
+].map((p) => ({
+  ...p,
+  name: `Atlas Transforma — ${p.sessionsTotal} sesiones`,
+  variant: SessionPackVariant.TRANSFORMA,
+  groupSizeMin: 1,
+  groupSizeMax: 1,
+  perks: TRANSFORMA_PERKS,
+}));
+
+// =====================================================
+// TALLERES (clases dirigidas v1)
+// =====================================================
+const WORKSHOPS = [
+  {
+    code: 'CALISTENIA',
+    name: 'Taller de Calistenia',
+    description: 'Entrenamiento de peso corporal con instructor especializado.',
+    defaultDurationMin: 60,
+    basePriceClp: 8_000,
+    displayOrder: 1,
+  },
+  {
+    code: 'ESCALADA',
+    name: 'Taller de Escalada',
+    description: 'Técnica y progresión en muro de escalada.',
+    defaultDurationMin: 90,
+    basePriceClp: 12_000,
+    displayOrder: 2,
+  },
+];
+
+// =====================================================
+// HORARIOS DE OPERACIÓN — La Unión
+// =====================================================
+const OPERATING_HOURS = [
+  // Lunes a viernes (1..5)
+  ...[1, 2, 3, 4, 5].flatMap((w) => [
+    { weekday: w, blockStart: '06:00', blockEnd: '13:00', label: 'Mañana' },
+    { weekday: w, blockStart: '15:00', blockEnd: '22:30', label: 'Tarde' },
+  ]),
+  // Sábado
+  { weekday: 6, blockStart: '08:00', blockEnd: '13:00', label: 'Mañana' },
+  { weekday: 6, blockStart: '15:00', blockEnd: '22:00', label: 'Tarde' },
+];
+
+// =====================================================
+// BADGES INICIALES
+// =====================================================
+const BADGES = [
+  {
+    code: 'FIRST_CHECKIN',
+    name: 'Primer entrenamiento',
+    description: 'Marcaste tu primera entrada al centro.',
+    criteria: { type: 'checkins', threshold: 1 },
+  },
+  {
+    code: 'STREAK_7',
+    name: 'Racha de 7 días',
+    description: 'Entrenaste 7 días seguidos.',
+    criteria: { type: 'streak', threshold: 7 },
+  },
+  {
+    code: 'STREAK_30',
+    name: 'Racha de 30 días',
+    description: 'Un mes entero sin perder un día.',
+    criteria: { type: 'streak', threshold: 30 },
+  },
+  {
+    code: 'FIRST_MONTH',
+    name: 'Primer mes',
+    description: 'Completaste tu primer mes en Atlas.',
+    criteria: { type: 'membership_months', threshold: 1 },
+  },
+  {
+    code: 'FIRST_WORKSHOP',
+    name: 'Primer taller',
+    description: 'Asististe a tu primer taller dirigido.',
+    criteria: { type: 'workshops_attended', threshold: 1 },
+  },
+  {
+    code: 'CLIMBER',
+    name: 'Escalador',
+    description: 'Asististe a 5 talleres de escalada.',
+    criteria: { type: 'workshop_count', workshopCode: 'ESCALADA', threshold: 5 },
+  },
+];
+
+async function main() {
+  console.log('🌱 Seeding Atlas database...');
+
+  // Planes
+  for (const plan of PLANS) {
+    await prisma.plan.upsert({
+      where: { code: plan.code },
+      create: plan,
+      update: plan,
+    });
+  }
+  console.log(`  ✓ ${PLANS.length} planes`);
+
+  // Session packs
+  const allPacks = [...SESSION_PACKS, ...TRANSFORMA_PACKS];
+  for (const pack of allPacks) {
+    await prisma.sessionPack.upsert({
+      where: { code: pack.code },
+      create: pack,
+      update: pack,
+    });
+  }
+  console.log(`  ✓ ${allPacks.length} session packs`);
+
+  // Talleres
+  for (const w of WORKSHOPS) {
+    await prisma.workshop.upsert({
+      where: { code: w.code },
+      create: w,
+      update: w,
+    });
+  }
+  console.log(`  ✓ ${WORKSHOPS.length} talleres`);
+
+  // Horarios
+  await prisma.operatingHours.deleteMany();
+  await prisma.operatingHours.createMany({ data: OPERATING_HOURS });
+  console.log(`  ✓ ${OPERATING_HOURS.length} bloques horarios`);
+
+  // Badges
+  for (const b of BADGES) {
+    await prisma.badge.upsert({
+      where: { code: b.code },
+      create: b,
+      update: b,
+    });
+  }
+  console.log(`  ✓ ${BADGES.length} badges`);
+
+  // ServiceTypes ya están en enum — no requieren seed
+  // Pero podemos seedear profesionales placeholders si admin lo requiere después
+  console.log(
+    `  ℹ ServiceTypes disponibles: ${Object.values(ServiceType).join(', ')} (se asignan via Professional)`,
+  );
+
+  console.log('✨ Seed completado.');
+}
+
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(() => prisma.$disconnect());

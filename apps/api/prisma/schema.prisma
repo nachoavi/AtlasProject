@@ -1,0 +1,695 @@
+// Atlas Training Center — Prisma schema
+// Plan completo: ver /Users/luissanmartin/.claude/plans/utilizando-el-siguiente-stack-snug-otter.md §3
+// Zona horaria del centro: America/Santiago. Todos los timestamps se guardan en UTC.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =====================================================================
+// USUARIOS Y AUTENTICACIÓN
+// =====================================================================
+
+enum UserRole {
+  MEMBER
+  TRAINER
+  PROFESSIONAL
+  STAFF
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+model User {
+  id             String     @id @default(cuid())
+  email          String     @unique
+  passwordHash   String
+  fullName       String
+  rut            String?    @unique // RUT chileno con dígito verificador
+  phone          String?
+  role           UserRole   @default(MEMBER)
+  status         UserStatus @default(ACTIVE)
+  emailVerifiedAt DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  deletedAt      DateTime?
+
+  profile             Profile?
+  subscriptions       Subscription[]
+  checkIns            CheckIn[]
+  bookings            Booking[]
+  progressEntries     ProgressEntry[]
+  assignedRoutines    AssignedRoutine[]
+  sessionPacks        UserSessionPack[]
+  workshopEnrollments WorkshopEnrollment[]
+  eventRsvps          EventRsvp[]
+  notifications       Notification[]
+  refreshTokens       RefreshToken[]
+  badges              UserBadge[]
+  pushSubscriptions   PushSubscription[]
+  workoutLogs         WorkoutLog[]
+  trainerSessions     SessionPackRedemption[] @relation("TrainerSessions")
+  participantOf       SessionParticipant[]
+  professionalProfile Professional?
+  routinesCreated     Routine[]               @relation("RoutineAuthor")
+  assignmentsCreated  AssignedRoutine[]       @relation("RoutineAssigner")
+  workshopsInstructed WorkshopSession[]       @relation("WorkshopInstructor")
+  auditLogs           AuditLog[]              @relation("AuditActor")
+
+  @@index([role])
+  @@index([status])
+}
+
+model Profile {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  birthDate           DateTime? @db.Date
+  heightCm            Int?
+  goal                String?  // pérdida_peso | masa_muscular | resistencia | escalada | otro
+  goalNote            String?
+  avatarUrl           String?
+  emergencyContact    String?
+  emergencyPhone      String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model RefreshToken {
+  id          String   @id @default(cuid())
+  userId      String
+  tokenHash   String   @unique
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  replacedBy  String?
+  createdAt   DateTime @default(now())
+  userAgent   String?
+  ipAddress   String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// =====================================================================
+// PLANES Y SUSCRIPCIONES MENSUALES
+// =====================================================================
+
+enum PlanSegment {
+  GENERAL
+  ESTUDIANTE
+}
+
+model Plan {
+  id                  String   @id @default(cuid())
+  code                String   @unique
+  name                String
+  description         String?
+  priceClp            Int
+  daysPerWeek         Int
+  workshopDiscountPct Int      @default(0)
+  eventDiscountPct    Int      @default(0)
+  perks               Json     // string[] de beneficios
+  segment             PlanSegment @default(GENERAL)
+  isActive            Boolean  @default(true)
+  displayOrder        Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  subscriptions Subscription[]
+
+  @@index([isActive])
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  PAUSED
+  CANCELLED
+}
+
+model Subscription {
+  id          String             @id @default(cuid())
+  userId      String
+  planId      String
+  status      SubscriptionStatus @default(ACTIVE)
+  startsAt    DateTime
+  endsAt      DateTime
+  autoRenew   Boolean            @default(false)
+  pausedAt    DateTime?
+  pausedDays  Int                @default(0)
+  cancelledAt DateTime?
+  paymentId   String?            @unique
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan    Plan     @relation(fields: [planId], references: [id])
+  payment Payment? @relation(fields: [paymentId], references: [id])
+
+  @@index([userId, status])
+  @@index([endsAt])
+}
+
+// =====================================================================
+// SESSION PACKS — ATLAS LEGIÓN Y ATLAS TRANSFORMA
+// =====================================================================
+
+enum SessionPackVariant {
+  LEGION
+  TRANSFORMA
+}
+
+enum UserSessionPackStatus {
+  ACTIVE
+  EXHAUSTED
+  EXPIRED
+  REFUNDED
+}
+
+enum SessionRedemptionStatus {
+  SCHEDULED
+  ATTENDED
+  NO_SHOW
+  CANCELLED
+}
+
+model SessionPack {
+  id                 String             @id @default(cuid())
+  code               String             @unique
+  name               String
+  description        String?
+  variant            SessionPackVariant
+  sessionsTotal      Int
+  priceClp           Int
+  groupSizeMin       Int
+  groupSizeMax       Int
+  sessionDurationMin Int                @default(60)
+  validityDays       Int                @default(90)
+  perks              Json
+  isActive           Boolean            @default(true)
+  displayOrder       Int                @default(0)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  purchases UserSessionPack[]
+
+  @@index([variant, isActive])
+}
+
+model UserSessionPack {
+  id                String                @id @default(cuid())
+  userId            String
+  sessionPackId     String
+  paymentId         String                @unique
+  sessionsRemaining Int
+  sessionsTotal     Int
+  startsAt          DateTime
+  expiresAt         DateTime
+  status            UserSessionPackStatus @default(ACTIVE)
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  user        User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionPack SessionPack             @relation(fields: [sessionPackId], references: [id])
+  payment     Payment                 @relation(fields: [paymentId], references: [id])
+  redemptions SessionPackRedemption[]
+
+  @@index([userId, status])
+  @@index([expiresAt])
+}
+
+model SessionPackRedemption {
+  id                String                  @id @default(cuid())
+  userSessionPackId String
+  trainerId         String
+  scheduledAt       DateTime
+  durationMin       Int                     @default(60)
+  status            SessionRedemptionStatus @default(SCHEDULED)
+  notes             String?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+
+  userSessionPack UserSessionPack      @relation(fields: [userSessionPackId], references: [id], onDelete: Cascade)
+  trainer         User                 @relation("TrainerSessions", fields: [trainerId], references: [id])
+  participants    SessionParticipant[]
+
+  @@index([trainerId, scheduledAt])
+  @@index([scheduledAt])
+}
+
+model SessionParticipant {
+  id           String  @id @default(cuid())
+  redemptionId String
+  userId       String?
+  guestName    String?
+
+  redemption SessionPackRedemption @relation(fields: [redemptionId], references: [id], onDelete: Cascade)
+  user       User?                 @relation(fields: [userId], references: [id])
+
+  @@index([redemptionId])
+}
+
+// =====================================================================
+// PAGOS (Webpay)
+// =====================================================================
+
+enum PaymentProvider {
+  WEBPAY
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentTarget {
+  SUBSCRIPTION
+  SESSION_PACK
+  WORKSHOP_ENROLLMENT
+  EVENT_RSVP
+}
+
+model Payment {
+  id            String          @id @default(cuid())
+  userId        String
+  provider      PaymentProvider @default(WEBPAY)
+  providerTxId  String          @unique
+  amountClp     Int
+  status        PaymentStatus   @default(PENDING)
+  target        PaymentTarget
+  targetRef     String?         // id del objeto pagado (subscription/pack/etc.)
+  raw           Json?
+  completedAt   DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  subscription Subscription?
+  sessionPack  UserSessionPack?
+
+  @@index([userId])
+  @@index([status])
+}
+
+// =====================================================================
+// SERVICIOS PROFESIONALES (kinesiología, podología, nutrición)
+// =====================================================================
+
+enum ServiceType {
+  KINESIOLOGIA
+  PODOLOGIA
+  NUTRICION
+}
+
+model Professional {
+  id          String      @id @default(cuid())
+  userId      String      @unique
+  serviceType ServiceType
+  bio         String?
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  availabilitySlots AvailabilitySlot[]
+  bookings          Booking[]
+}
+
+model AvailabilitySlot {
+  id             String   @id @default(cuid())
+  professionalId String
+  weekday        Int      // 0..6 (recurrente) o null si es excepción
+  startTime      String   // "HH:mm"
+  endTime        String   // "HH:mm"
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  professional Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  @@index([professionalId, weekday])
+}
+
+enum BookingStatus {
+  BOOKED
+  CONFIRMED
+  CANCELLED
+  ATTENDED
+  NO_SHOW
+}
+
+model Booking {
+  id             String        @id @default(cuid())
+  userId         String
+  professionalId String
+  serviceType    ServiceType
+  slotStart      DateTime
+  slotEnd        DateTime
+  status         BookingStatus @default(BOOKED)
+  priceClp       Int           @default(0)
+  notes          String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  professional Professional @relation(fields: [professionalId], references: [id])
+
+  @@index([userId, slotStart])
+  @@index([professionalId, slotStart])
+  @@index([slotStart])
+}
+
+// =====================================================================
+// TALLERES (clases dirigidas: Calistenia, Escalada)
+// =====================================================================
+
+model Workshop {
+  id                String   @id @default(cuid())
+  code              String   @unique
+  name              String
+  description       String?
+  defaultDurationMin Int     @default(60)
+  basePriceClp      Int
+  coverUrl          String?
+  isActive          Boolean  @default(true)
+  displayOrder      Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  sessions WorkshopSession[]
+
+  @@index([isActive])
+}
+
+model WorkshopSession {
+  id           String   @id @default(cuid())
+  workshopId   String
+  instructorId String
+  startsAt     DateTime
+  durationMin  Int
+  capacity     Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workshop    Workshop             @relation(fields: [workshopId], references: [id])
+  instructor  User                 @relation("WorkshopInstructor", fields: [instructorId], references: [id])
+  enrollments WorkshopEnrollment[]
+
+  @@index([workshopId, startsAt])
+  @@index([startsAt])
+}
+
+enum WorkshopEnrollmentStatus {
+  BOOKED
+  ATTENDED
+  NO_SHOW
+  CANCELLED
+}
+
+model WorkshopEnrollment {
+  id               String                   @id @default(cuid())
+  userId           String
+  sessionId        String
+  priceChargedClp  Int
+  status           WorkshopEnrollmentStatus @default(BOOKED)
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session WorkshopSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sessionId])
+  @@index([sessionId])
+}
+
+// =====================================================================
+// EVENTOS ESPECIALES
+// =====================================================================
+
+model Event {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  coverUrl    String?
+  startsAt    DateTime
+  endsAt      DateTime?
+  capacity    Int?
+  priceClp    Int        @default(0)
+  isPublished Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  rsvps EventRsvp[]
+
+  @@index([startsAt, isPublished])
+}
+
+enum EventRsvpStatus {
+  CONFIRMED
+  CANCELLED
+  ATTENDED
+  NO_SHOW
+}
+
+model EventRsvp {
+  id              String          @id @default(cuid())
+  userId          String
+  eventId         String
+  priceChargedClp Int
+  status          EventRsvpStatus @default(CONFIRMED)
+  createdAt       DateTime        @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+}
+
+// =====================================================================
+// CHECK-IN, RACHA, PROGRESO
+// =====================================================================
+
+enum CheckInSource {
+  STAFF_SCAN
+  SELF_QR
+  STAFF_MANUAL
+}
+
+model CheckIn {
+  id        String        @id @default(cuid())
+  userId    String
+  occurredAt DateTime     @default(now())
+  source    CheckInSource @default(STAFF_SCAN)
+  staffId   String?
+  location  String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, occurredAt])
+  @@index([occurredAt])
+}
+
+model ProgressEntry {
+  id           String   @id @default(cuid())
+  userId       String
+  recordedAt   DateTime @default(now())
+  weightKg     Float?
+  bodyFatPct   Float?
+  waistCm      Float?
+  chestCm      Float?
+  hipsCm       Float?
+  armCm        Float?
+  thighCm      Float?
+  notes        String?
+  photoUrl     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, recordedAt])
+}
+
+// =====================================================================
+// RUTINAS Y LOGS DE ENTRENAMIENTO
+// =====================================================================
+
+model Routine {
+  id          String   @id @default(cuid())
+  authorId    String
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  author      User              @relation("RoutineAuthor", fields: [authorId], references: [id])
+  exercises   RoutineExercise[]
+  assignments AssignedRoutine[]
+}
+
+model RoutineExercise {
+  id          String  @id @default(cuid())
+  routineId   String
+  name        String
+  order       Int
+  sets        Int
+  repsTarget  String  // ej. "8-12" o "30s"
+  restSeconds Int     @default(60)
+  notes       String?
+
+  routine Routine @relation(fields: [routineId], references: [id], onDelete: Cascade)
+
+  @@index([routineId, order])
+}
+
+model AssignedRoutine {
+  id          String    @id @default(cuid())
+  routineId   String
+  userId      String
+  assignedBy  String
+  startsAt    DateTime
+  endsAt      DateTime?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  routine    Routine      @relation(fields: [routineId], references: [id])
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assigner   User         @relation("RoutineAssigner", fields: [assignedBy], references: [id])
+  workoutLogs WorkoutLog[]
+
+  @@index([userId, isActive])
+}
+
+model WorkoutLog {
+  id                 String   @id @default(cuid())
+  userId             String
+  assignedRoutineId  String?
+  performedAt        DateTime @default(now())
+  durationMin        Int?
+  notes              String?
+  setsCompleted      Json     // { exerciseId: [{reps, weightKg}] }
+
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignedRoutine AssignedRoutine? @relation(fields: [assignedRoutineId], references: [id])
+
+  @@index([userId, performedAt])
+}
+
+// =====================================================================
+// HORARIOS DEL CENTRO
+// =====================================================================
+
+model OperatingHours {
+  id         Int    @id @default(autoincrement())
+  weekday    Int    // 0..6
+  blockStart String // "HH:mm"
+  blockEnd   String // "HH:mm"
+  label      String?
+
+  @@index([weekday])
+}
+
+model SpecialClosure {
+  id         Int       @id @default(autoincrement())
+  date       DateTime  @db.Date
+  reason     String
+  allDay     Boolean   @default(true)
+  blockStart String?
+  blockEnd   String?
+
+  @@unique([date])
+}
+
+// =====================================================================
+// BADGES, NOTIFICACIONES, PUSH, AUDITORÍA
+// =====================================================================
+
+model Badge {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String
+  iconUrl     String?
+  criteria    Json     // estructura { type: "streak"|"workshops"|"prs"|..., threshold: number }
+  createdAt   DateTime @default(now())
+
+  unlocks UserBadge[]
+}
+
+model UserBadge {
+  id         String   @id @default(cuid())
+  userId     String
+  badgeId    String
+  unlockedAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id])
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+}
+
+enum NotificationType {
+  SUBSCRIPTION_EXPIRY
+  BOOKING_REMINDER
+  SESSION_REMINDER
+  STREAK_MILESTONE
+  BADGE_UNLOCKED
+  PAYMENT_RECEIPT
+  GENERIC
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String
+  deepLink  String?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  action    String
+  entity    String?
+  entityId  String?
+  ipAddress String?
+  userAgent String?
+  diff      Json?
+  createdAt DateTime @default(now())
+
+  actor User? @relation("AuditActor", fields: [actorId], references: [id])
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+}

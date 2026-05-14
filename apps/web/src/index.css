@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    min-height: 100dvh;
+  }
+
+  /* Selección con accent Atlas */
+  ::selection {
+    background-color: #e5f000;
+    color: #0a0a0a;
+  }
+}
+
+@layer components {
+  /* Botón coral primario — variante CTA principal de la marca */
+  .btn-coral {
+    @apply inline-flex items-center justify-center rounded-full bg-atlas-coral px-6 py-3
+           font-display uppercase tracking-wider text-atlas-white transition-colors
+           hover:bg-atlas-coral-hover focus-visible:outline-none focus-visible:ring-2
+           focus-visible:ring-atlas-coral focus-visible:ring-offset-2;
+  }
+
+  /* Card blanca redondeada — variante default sobre amarillo o negro */
+  .card-atlas {
+    @apply rounded-2xl bg-white p-6 text-atlas-black shadow-lg ring-1 ring-black/5;
+  }
+
+  /* Highlight badge — círculo amarillo estilo IG */
+  .highlight-badge {
+    @apply flex h-20 w-20 items-center justify-center rounded-full bg-atlas-yellow
+           ring-2 ring-atlas-ink;
+  }
+}
