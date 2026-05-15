@@ -319,6 +319,74 @@ async function main() {
   });
   console.log(`  ✓ Usuario STAFF: ${staffEmail} / ${staffPassword}`);
 
+  // Profesionales con disponibilidad semanal
+  const professionalsSeed = [
+    {
+      email: 'kine@atlas.local',
+      password: 'AtlasKine2026',
+      fullName: 'Dra. Camila Soto',
+      bio: 'Kinesióloga, especialidad en deporte y rehabilitación.',
+      service: ServiceType.KINESIOLOGIA,
+      slots: [
+        ...[1, 2, 3, 4, 5].flatMap((w) => [
+          { weekday: w, startTime: '10:00', endTime: '13:00' },
+          { weekday: w, startTime: '16:00', endTime: '20:00' },
+        ]),
+      ],
+    },
+    {
+      email: 'podologia@atlas.local',
+      password: 'AtlasPodologia2026',
+      fullName: 'Pdgo. Rodrigo Vera',
+      bio: 'Podología deportiva y biomecánica.',
+      service: ServiceType.PODOLOGIA,
+      slots: [
+        { weekday: 2, startTime: '09:00', endTime: '13:00' },
+        { weekday: 3, startTime: '09:00', endTime: '13:00' },
+        { weekday: 4, startTime: '09:00', endTime: '13:00' },
+        { weekday: 6, startTime: '09:00', endTime: '12:00' },
+      ],
+    },
+    {
+      email: 'nutricion@atlas.local',
+      password: 'AtlasNutricion2026',
+      fullName: 'Nut. Valentina Pérez',
+      bio: 'Nutrición clínica y deportiva.',
+      service: ServiceType.NUTRICION,
+      slots: [
+        ...[1, 2, 3, 4, 5].flatMap((w) => [
+          { weekday: w, startTime: '11:00', endTime: '13:00' },
+          { weekday: w, startTime: '17:00', endTime: '21:00' },
+        ]),
+      ],
+    },
+  ];
+
+  for (const p of professionalsSeed) {
+    const hash = await bcrypt.hash(p.password, 12);
+    const user = await prisma.user.upsert({
+      where: { email: p.email },
+      create: {
+        email: p.email,
+        passwordHash: hash,
+        fullName: p.fullName,
+        role: UserRole.PROFESSIONAL,
+        profile: { create: {} },
+      },
+      update: { passwordHash: hash, role: UserRole.PROFESSIONAL, fullName: p.fullName },
+    });
+    const prof = await prisma.professional.upsert({
+      where: { userId: user.id },
+      create: { userId: user.id, serviceType: p.service, bio: p.bio, isActive: true },
+      update: { serviceType: p.service, bio: p.bio, isActive: true },
+    });
+    await prisma.availabilitySlot.deleteMany({ where: { professionalId: prof.id } });
+    await prisma.availabilitySlot.createMany({
+      data: p.slots.map((s) => ({ ...s, professionalId: prof.id, isActive: true })),
+    });
+  }
+  console.log(`  ✓ ${professionalsSeed.length} profesionales con disponibilidad semanal`);
+
   console.log('✨ Seed completado.');
 }
 

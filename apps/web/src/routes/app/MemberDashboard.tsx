@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { differenceInCalendarDays, format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { LogOut, QrCode, TrendingUp, Trophy } from 'lucide-react';
+import { LogOut, QrCode, TrendingUp, Trophy, CalendarDays } from 'lucide-react';
 import { formatClp } from '@atlas/shared';
 import { apiFetch } from '../../lib/api';
 import { useAuth } from '../../stores/auth';
@@ -127,13 +127,22 @@ export function MemberDashboard() {
             </div>
           )}
 
-          <Link
-            to="/app/qr"
-            className="mt-8 inline-flex items-center gap-3 rounded-full bg-atlas-coral px-7 py-4 font-display uppercase tracking-wider text-atlas-white hover:bg-atlas-coral-hover"
-          >
-            <QrCode size={18} />
-            Marcar entrada
-          </Link>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              to="/app/qr"
+              className="inline-flex items-center gap-3 rounded-full bg-atlas-coral px-7 py-4 font-display uppercase tracking-wider text-atlas-white hover:bg-atlas-coral-hover"
+            >
+              <QrCode size={18} />
+              Marcar entrada
+            </Link>
+            <Link
+              to="/app/reservas"
+              className="inline-flex items-center gap-2 rounded-full border border-atlas-white/20 px-5 py-3 font-display text-sm uppercase tracking-wider text-atlas-white hover:bg-atlas-white/10"
+            >
+              <CalendarDays size={16} />
+              Reservas
+            </Link>
+          </div>
         </div>
 
         {/* Suscripción */}

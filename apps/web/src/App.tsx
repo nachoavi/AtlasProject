@@ -5,6 +5,8 @@ import { RegisterPage } from './routes/auth/RegisterPage';
 import { ForgotPasswordPage } from './routes/auth/ForgotPasswordPage';
 import { MemberDashboard } from './routes/app/MemberDashboard';
 import { QrCheckinPage } from './routes/app/QrCheckinPage';
+import { BookingsPage } from './routes/app/BookingsPage';
+import { NewBookingPage } from './routes/app/NewBookingPage';
 import { RequireAuth } from './components/auth/RequireAuth';
 import { RequireRole } from './components/auth/RequireRole';
 import { StaffLayout } from './routes/staff/StaffLayout';
@@ -33,6 +35,22 @@ export function App() {
         element={
           <RequireAuth>
             <QrCheckinPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/app/reservas"
+        element={
+          <RequireAuth>
+            <BookingsPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/app/reservas/nueva"
+        element={
+          <RequireAuth>
+            <NewBookingPage />
           </RequireAuth>
         }
       />

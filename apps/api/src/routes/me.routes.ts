@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { requireAuth } from '../middlewares/auth.js';
 import {
@@ -6,6 +7,13 @@ import {
   getStreakSnapshot,
   recentCheckIns,
 } from '../services/checkin.service.js';
+import {
+  BookingError,
+  cancelBooking,
+  createBooking,
+  myBookings,
+} from '../services/booking.service.js';
+import { validateBody } from '../middlewares/validate.js';
 
 export const meRouter: Router = Router();
 
@@ -100,6 +108,56 @@ meRouter.get('/qr-token', async (req, res, next) => {
     const { token, expiresAt } = await generateQrToken(req.user!.sub);
     res.json({ token, expiresAt });
   } catch (err) {
+    next(err);
+  }
+});
+
+// =====================================================
+// RESERVAS DE SERVICIOS
+// =====================================================
+
+const CreateBookingSchema = z.object({
+  professionalId: z.string().cuid(),
+  slotStart: z.coerce.date(),
+  durationMin: z.number().int().positive().max(180).optional(),
+  notes: z.string().max(500).optional(),
+});
+
+meRouter.get('/bookings', async (req, res, next) => {
+  try {
+    const scope = (req.query.scope as 'upcoming' | 'past' | 'all') ?? 'all';
+    const bookings = await myBookings(req.user!.sub, scope);
+    res.json({ bookings });
+  } catch (err) {
+    next(err);
+  }
+});
+
+meRouter.post('/bookings', validateBody(CreateBookingSchema), async (req, res, next) => {
+  try {
+    const booking = await createBooking({ userId: req.user!.sub, ...req.body });
+    res.status(201).json({ booking });
+  } catch (err) {
+    if (err instanceof BookingError) {
+      const status = err.code === 'SLOT_TAKEN' ? 409 : err.code === 'PROFESSIONAL_NOT_FOUND' ? 404 : 400;
+      res.status(status).json({ error: err.code, message: err.message });
+      return;
+    }
+    next(err);
+  }
+});
+
+meRouter.delete('/bookings/:id', async (req, res, next) => {
+  try {
+    const booking = await cancelBooking(req.user!.sub, req.params.id!);
+    res.json({ booking });
+  } catch (err) {
+    if (err instanceof BookingError) {
+      const status =
+        err.code === 'BOOKING_NOT_FOUND' ? 404 : err.code === 'FORBIDDEN' ? 403 : 400;
+      res.status(status).json({ error: err.code, message: err.message });
+      return;
+    }
     next(err);
   }
 });
