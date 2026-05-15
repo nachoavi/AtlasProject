@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LogOut, LayoutDashboard, UserPlus, Receipt } from 'lucide-react';
+import { LogOut, LayoutDashboard, UserPlus, Receipt, ScanLine } from 'lucide-react';
 import { useAuth } from '../../stores/auth';
 import { cn } from '../../lib/cn';
 
 const NAV = [
   { to: '/staff', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/staff/check-in', label: 'Check-in', icon: ScanLine, end: false },
   { to: '/staff/inscribir', label: 'Inscribir', icon: UserPlus, end: false },
   { to: '/staff/caja', label: 'Caja del día', icon: Receipt, end: false },
 ];

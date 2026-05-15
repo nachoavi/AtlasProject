@@ -9,7 +9,9 @@ function cookieOptions(): CookieOptions {
     secure: env.NODE_ENV === 'production',
     sameSite: env.NODE_ENV === 'production' ? 'strict' : 'lax',
     domain: env.COOKIE_DOMAIN,
-    path: '/auth',
+    // En dev: '/' es necesario porque el proxy de Vite expone el API en /api/*.
+    // En prod con dominio separado para el API, también funciona (más amplio pero httpOnly+secure+sameSite=strict mitigan el riesgo).
+    path: '/',
     maxAge: env.JWT_REFRESH_TTL_DAYS * 24 * 60 * 60 * 1000,
   };
 }

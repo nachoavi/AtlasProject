@@ -3,13 +3,15 @@ import { LandingPage } from './routes/LandingPage';
 import { LoginPage } from './routes/auth/LoginPage';
 import { RegisterPage } from './routes/auth/RegisterPage';
 import { ForgotPasswordPage } from './routes/auth/ForgotPasswordPage';
-import { DashboardPlaceholder } from './routes/app/DashboardPlaceholder';
+import { MemberDashboard } from './routes/app/MemberDashboard';
+import { QrCheckinPage } from './routes/app/QrCheckinPage';
 import { RequireAuth } from './components/auth/RequireAuth';
 import { RequireRole } from './components/auth/RequireRole';
 import { StaffLayout } from './routes/staff/StaffLayout';
 import { StaffDashboard } from './routes/staff/StaffDashboard';
 import { EnrollWizard } from './routes/staff/EnrollWizard';
 import { CashRegister } from './routes/staff/CashRegister';
+import { CheckinPage } from './routes/staff/CheckinPage';
 
 export function App() {
   return (
@@ -19,10 +21,18 @@ export function App() {
       <Route path="/registro" element={<RegisterPage />} />
       <Route path="/recuperar" element={<ForgotPasswordPage />} />
       <Route
-        path="/app/*"
+        path="/app"
         element={
           <RequireAuth>
-            <DashboardPlaceholder />
+            <MemberDashboard />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/app/qr"
+        element={
+          <RequireAuth>
+            <QrCheckinPage />
           </RequireAuth>
         }
       />
@@ -35,6 +45,7 @@ export function App() {
         }
       >
         <Route index element={<StaffDashboard />} />
+        <Route path="check-in" element={<CheckinPage />} />
         <Route path="inscribir" element={<EnrollWizard />} />
         <Route path="caja" element={<CashRegister />} />
       </Route>

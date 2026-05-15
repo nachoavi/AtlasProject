@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { UserRole } from '@prisma/client';
+import { CheckInSource, UserRole } from '@prisma/client';
+import { z } from 'zod';
 import {
   StaffCreateMemberSchema,
   StaffCreateSessionPackSchema,
@@ -18,6 +19,11 @@ import {
   searchMembers,
   staffDashboard,
 } from '../services/staff.service.js';
+import {
+  CheckInError,
+  consumeQrToken,
+  createCheckIn,
+} from '../services/checkin.service.js';
 
 export const staffRouter: Router = Router();
 
@@ -110,6 +116,85 @@ staffRouter.get('/catalog', async (_req, res, next) => {
       prisma.sessionPack.findMany({ where: { isActive: true }, orderBy: { displayOrder: 'asc' } }),
     ]);
     res.json({ plans, sessionPacks });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// =====================================================
+// CHECK-INS
+// =====================================================
+
+const ManualCheckInSchema = z.object({
+  userId: z.string().cuid(),
+  force: z.boolean().optional(),
+  location: z.string().max(80).optional(),
+});
+
+staffRouter.post('/check-ins', validateBody(ManualCheckInSchema), async (req, res, next) => {
+  try {
+    const result = await createCheckIn({
+      userId: req.body.userId,
+      source: CheckInSource.STAFF_MANUAL,
+      staffId: req.user!.sub,
+      location: req.body.location,
+      force: req.body.force,
+    });
+    res.status(201).json(result);
+  } catch (err) {
+    if (err instanceof CheckInError) {
+      const status = err.code === 'USER_NOT_FOUND' ? 404 : 400;
+      res.status(status).json({ error: err.code, message: err.message });
+      return;
+    }
+    next(err);
+  }
+});
+
+const QrCheckInSchema = z.object({
+  token: z.string().min(8),
+  location: z.string().max(80).optional(),
+});
+
+staffRouter.post('/check-ins/scan', validateBody(QrCheckInSchema), async (req, res, next) => {
+  try {
+    const userId = await consumeQrToken(req.body.token);
+    if (!userId) {
+      res.status(400).json({ error: 'INVALID_OR_EXPIRED_QR', message: 'QR inválido o expirado' });
+      return;
+    }
+    const result = await createCheckIn({
+      userId,
+      source: CheckInSource.STAFF_SCAN,
+      staffId: req.user!.sub,
+      location: req.body.location,
+    });
+    const member = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, fullName: true, email: true, rut: true },
+    });
+    res.status(201).json({ ...result, member });
+  } catch (err) {
+    if (err instanceof CheckInError) {
+      const status = err.code === 'USER_NOT_FOUND' ? 404 : 400;
+      res.status(status).json({ error: err.code, message: err.message });
+      return;
+    }
+    next(err);
+  }
+});
+
+staffRouter.get('/check-ins/today', async (_req, res, next) => {
+  try {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const checkIns = await prisma.checkIn.findMany({
+      where: { occurredAt: { gte: todayStart } },
+      orderBy: { occurredAt: 'desc' },
+      include: { user: { select: { id: true, fullName: true, email: true } } },
+      take: 100,
+    });
+    res.json({ checkIns });
   } catch (err) {
     next(err);
   }
