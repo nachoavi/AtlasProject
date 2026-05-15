@@ -14,10 +14,10 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "db:migrate": "pnpm --filter @atlas/api prisma migrate dev",
-    "db:seed": "pnpm --filter @atlas/api prisma db seed",
-    "db:studio": "pnpm --filter @atlas/api prisma studio",
-    "db:reset": "pnpm --filter @atlas/api prisma migrate reset",
+    "db:migrate": "pnpm --filter @atlas/api exec prisma migrate dev",
+    "db:seed": "pnpm --filter @atlas/api exec prisma db seed",
+    "db:studio": "pnpm --filter @atlas/api exec prisma studio",
+    "db:reset": "pnpm --filter @atlas/api exec prisma migrate reset",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\""
   },
   "devDependencies": {

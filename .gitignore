@@ -46,3 +46,6 @@ tmp/
 .claude/
 skills-lock.json
 
+# Credenciales locales de dev (NO COMMITEAR — son passwords en texto plano)
+CREDENTIALS.local.md
+
