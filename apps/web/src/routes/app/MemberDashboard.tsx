@@ -143,6 +143,20 @@ export function MemberDashboard() {
               Reservas
             </Link>
           </div>
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              to="/app/talleres"
+              className="text-xs uppercase tracking-wider text-atlas-yellow hover:underline"
+            >
+              Talleres →
+            </Link>
+            <Link
+              to="/app/eventos"
+              className="text-xs uppercase tracking-wider text-atlas-yellow hover:underline"
+            >
+              Eventos →
+            </Link>
+          </div>
         </div>
 
         {/* Suscripción */}

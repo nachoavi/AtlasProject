@@ -13,6 +13,13 @@ import {
   createBooking,
   myBookings,
 } from '../services/booking.service.js';
+import {
+  WorkshopError,
+  cancelWorkshopEnrollment,
+  enrollInWorkshop,
+  myWorkshopEnrollments,
+} from '../services/workshop.service.js';
+import { EventError, cancelRsvp, myRsvps, rsvpEvent } from '../services/event.service.js';
 import { validateBody } from '../middlewares/validate.js';
 
 export const meRouter: Router = Router();
@@ -155,6 +162,95 @@ meRouter.delete('/bookings/:id', async (req, res, next) => {
     if (err instanceof BookingError) {
       const status =
         err.code === 'BOOKING_NOT_FOUND' ? 404 : err.code === 'FORBIDDEN' ? 403 : 400;
+      res.status(status).json({ error: err.code, message: err.message });
+      return;
+    }
+    next(err);
+  }
+});
+
+// =====================================================
+// TALLERES — inscripciones
+// =====================================================
+
+const EnrollWorkshopSchema = z.object({ sessionId: z.string().cuid() });
+
+meRouter.get('/workshop-enrollments', async (req, res, next) => {
+  try {
+    const enrollments = await myWorkshopEnrollments(req.user!.sub);
+    res.json({ enrollments });
+  } catch (err) {
+    next(err);
+  }
+});
+
+meRouter.post(
+  '/workshop-enrollments',
+  validateBody(EnrollWorkshopSchema),
+  async (req, res, next) => {
+    try {
+      const result = await enrollInWorkshop(req.user!.sub, req.body.sessionId);
+      res.status(201).json(result);
+    } catch (err) {
+      if (err instanceof WorkshopError) {
+        const status = err.code === 'SESSION_NOT_FOUND' ? 404 : err.code === 'SESSION_FULL' ? 409 : 400;
+        res.status(status).json({ error: err.code, message: err.message });
+        return;
+      }
+      next(err);
+    }
+  },
+);
+
+meRouter.delete('/workshop-enrollments/:id', async (req, res, next) => {
+  try {
+    const enrollment = await cancelWorkshopEnrollment(req.user!.sub, req.params.id!);
+    res.json({ enrollment });
+  } catch (err) {
+    if (err instanceof WorkshopError) {
+      const status =
+        err.code === 'ENROLLMENT_NOT_FOUND' ? 404 : err.code === 'FORBIDDEN' ? 403 : 400;
+      res.status(status).json({ error: err.code, message: err.message });
+      return;
+    }
+    next(err);
+  }
+});
+
+// =====================================================
+// EVENTOS — RSVP
+// =====================================================
+
+meRouter.get('/event-rsvps', async (req, res, next) => {
+  try {
+    const rsvps = await myRsvps(req.user!.sub);
+    res.json({ rsvps });
+  } catch (err) {
+    next(err);
+  }
+});
+
+meRouter.post('/events/:id/rsvp', async (req, res, next) => {
+  try {
+    const rsvp = await rsvpEvent(req.user!.sub, req.params.id!);
+    res.status(201).json({ rsvp });
+  } catch (err) {
+    if (err instanceof EventError) {
+      const status = err.code === 'EVENT_NOT_FOUND' ? 404 : err.code === 'EVENT_FULL' ? 409 : 400;
+      res.status(status).json({ error: err.code, message: err.message });
+      return;
+    }
+    next(err);
+  }
+});
+
+meRouter.delete('/event-rsvps/:id', async (req, res, next) => {
+  try {
+    const rsvp = await cancelRsvp(req.user!.sub, req.params.id!);
+    res.json({ rsvp });
+  } catch (err) {
+    if (err instanceof EventError) {
+      const status = err.code === 'RSVP_NOT_FOUND' ? 404 : err.code === 'FORBIDDEN' ? 403 : 400;
       res.status(status).json({ error: err.code, message: err.message });
       return;
     }

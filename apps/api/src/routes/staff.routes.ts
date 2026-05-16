@@ -24,6 +24,12 @@ import {
   consumeQrToken,
   createCheckIn,
 } from '../services/checkin.service.js';
+import {
+  WorkshopError,
+  createWorkshopSession,
+  listInstructors,
+} from '../services/workshop.service.js';
+import { createEvent } from '../services/event.service.js';
 
 export const staffRouter: Router = Router();
 
@@ -195,6 +201,62 @@ staffRouter.get('/check-ins/today', async (_req, res, next) => {
       take: 100,
     });
     res.json({ checkIns });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// =====================================================
+// TALLERES Y EVENTOS — gestión de staff
+// =====================================================
+
+staffRouter.get('/instructors', async (_req, res, next) => {
+  try {
+    res.json({ instructors: await listInstructors() });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const CreateWorkshopSessionSchema = z.object({
+  workshopCode: z.string().min(1),
+  instructorId: z.string().cuid(),
+  startsAt: z.coerce.date(),
+  durationMin: z.number().int().positive().max(240).optional(),
+  capacity: z.number().int().positive().max(100),
+});
+
+staffRouter.post(
+  '/workshop-sessions',
+  validateBody(CreateWorkshopSessionSchema),
+  async (req, res, next) => {
+    try {
+      const session = await createWorkshopSession(req.body);
+      res.status(201).json({ session });
+    } catch (err) {
+      if (err instanceof WorkshopError) {
+        res.status(400).json({ error: err.code, message: err.message });
+        return;
+      }
+      next(err);
+    }
+  },
+);
+
+const CreateEventSchema = z.object({
+  title: z.string().min(2).max(120),
+  description: z.string().max(2000).optional(),
+  startsAt: z.coerce.date(),
+  endsAt: z.coerce.date().optional(),
+  capacity: z.number().int().positive().max(1000).optional(),
+  priceClp: z.number().int().nonnegative().optional(),
+  isPublished: z.boolean().optional(),
+});
+
+staffRouter.post('/events', validateBody(CreateEventSchema), async (req, res, next) => {
+  try {
+    const event = await createEvent(req.body);
+    res.status(201).json({ event });
   } catch (err) {
     next(err);
   }

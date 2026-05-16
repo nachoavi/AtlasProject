@@ -387,6 +387,100 @@ async function main() {
   }
   console.log(`  ✓ ${professionalsSeed.length} profesionales con disponibilidad semanal`);
 
+  // Instructores de talleres (rol TRAINER)
+  const instructorsSeed = [
+    {
+      email: 'instructor.calistenia@atlas.local',
+      password: 'AtlasCalistenia2026',
+      fullName: 'Coach Matías Rivas',
+    },
+    {
+      email: 'instructor.escalada@atlas.local',
+      password: 'AtlasEscalada2026',
+      fullName: 'Coach Daniela Lagos',
+    },
+  ];
+  const instructorIds: Record<string, string> = {};
+  for (const ins of instructorsSeed) {
+    const hash = await bcrypt.hash(ins.password, 12);
+    const user = await prisma.user.upsert({
+      where: { email: ins.email },
+      create: {
+        email: ins.email,
+        passwordHash: hash,
+        fullName: ins.fullName,
+        role: UserRole.TRAINER,
+        profile: { create: {} },
+      },
+      update: { passwordHash: hash, role: UserRole.TRAINER, fullName: ins.fullName },
+    });
+    instructorIds[ins.email] = user.id;
+  }
+  console.log(`  ✓ ${instructorsSeed.length} instructores de talleres`);
+
+  // Sesiones de talleres — próximos 14 días
+  const calistenia = await prisma.workshop.findUnique({ where: { code: 'CALISTENIA' } });
+  const escalada = await prisma.workshop.findUnique({ where: { code: 'ESCALADA' } });
+
+  function atDay(daysFromNow: number, hour: number, minute = 0): Date {
+    const d = new Date();
+    d.setDate(d.getDate() + daysFromNow);
+    d.setHours(hour, minute, 0, 0);
+    return d;
+  }
+
+  if (calistenia && escalada) {
+    await prisma.workshopSession.deleteMany({
+      where: { startsAt: { gte: new Date() } },
+    });
+    const sessions = [
+      { workshopId: calistenia.id, instructor: 'instructor.calistenia@atlas.local', startsAt: atDay(2, 19), durationMin: 60, capacity: 12 },
+      { workshopId: calistenia.id, instructor: 'instructor.calistenia@atlas.local', startsAt: atDay(5, 19), durationMin: 60, capacity: 12 },
+      { workshopId: calistenia.id, instructor: 'instructor.calistenia@atlas.local', startsAt: atDay(9, 18), durationMin: 60, capacity: 12 },
+      { workshopId: escalada.id, instructor: 'instructor.escalada@atlas.local', startsAt: atDay(3, 18), durationMin: 90, capacity: 8 },
+      { workshopId: escalada.id, instructor: 'instructor.escalada@atlas.local', startsAt: atDay(6, 11), durationMin: 90, capacity: 8 },
+      { workshopId: escalada.id, instructor: 'instructor.escalada@atlas.local', startsAt: atDay(10, 18), durationMin: 90, capacity: 8 },
+    ];
+    await prisma.workshopSession.createMany({
+      data: sessions.map((s) => ({
+        workshopId: s.workshopId,
+        instructorId: instructorIds[s.instructor]!,
+        startsAt: s.startsAt,
+        durationMin: s.durationMin,
+        capacity: s.capacity,
+      })),
+    });
+    console.log(`  ✓ ${sessions.length} sesiones de talleres agendadas`);
+  }
+
+  // Eventos especiales
+  await prisma.event.deleteMany({ where: { startsAt: { gte: new Date() } } });
+  await prisma.event.createMany({
+    data: [
+      {
+        title: 'Atlas Open Day',
+        description:
+          'Jornada de puertas abiertas: prueba todas las zonas, conoce a los coaches y participa en clases demo gratis.',
+        startsAt: atDay(7, 10),
+        endsAt: atDay(7, 18),
+        capacity: 80,
+        priceClp: 0,
+        isPublished: true,
+      },
+      {
+        title: 'Competencia interna de Calistenia',
+        description:
+          'Torneo amistoso de calistenia entre miembros Atlas. Categorías principiante y avanzado, premios para los podios.',
+        startsAt: atDay(14, 16),
+        endsAt: atDay(14, 20),
+        capacity: 40,
+        priceClp: 5000,
+        isPublished: true,
+      },
+    ],
+  });
+  console.log('  ✓ 2 eventos especiales');
+
   console.log('✨ Seed completado.');
 }
 

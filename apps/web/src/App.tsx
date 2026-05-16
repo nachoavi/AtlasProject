@@ -7,6 +7,8 @@ import { MemberDashboard } from './routes/app/MemberDashboard';
 import { QrCheckinPage } from './routes/app/QrCheckinPage';
 import { BookingsPage } from './routes/app/BookingsPage';
 import { NewBookingPage } from './routes/app/NewBookingPage';
+import { WorkshopsPage } from './routes/app/WorkshopsPage';
+import { EventsPage } from './routes/app/EventsPage';
 import { RequireAuth } from './components/auth/RequireAuth';
 import { RequireRole } from './components/auth/RequireRole';
 import { StaffLayout } from './routes/staff/StaffLayout';
@@ -14,6 +16,7 @@ import { StaffDashboard } from './routes/staff/StaffDashboard';
 import { EnrollWizard } from './routes/staff/EnrollWizard';
 import { CashRegister } from './routes/staff/CashRegister';
 import { CheckinPage } from './routes/staff/CheckinPage';
+import { WorkshopsAdmin } from './routes/staff/WorkshopsAdmin';
 
 export function App() {
   return (
@@ -55,6 +58,22 @@ export function App() {
         }
       />
       <Route
+        path="/app/talleres"
+        element={
+          <RequireAuth>
+            <WorkshopsPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/app/eventos"
+        element={
+          <RequireAuth>
+            <EventsPage />
+          </RequireAuth>
+        }
+      />
+      <Route
         path="/staff"
         element={
           <RequireRole roles={['STAFF', 'ADMIN']}>
@@ -65,6 +84,7 @@ export function App() {
         <Route index element={<StaffDashboard />} />
         <Route path="check-in" element={<CheckinPage />} />
         <Route path="inscribir" element={<EnrollWizard />} />
+        <Route path="talleres" element={<WorkshopsAdmin />} />
         <Route path="caja" element={<CashRegister />} />
       </Route>
       <Route

@@ -12,6 +12,8 @@ import { authRouter } from './routes/auth.routes.js';
 import { meRouter } from './routes/me.routes.js';
 import { plansRouter } from './routes/plans.routes.js';
 import { servicesRouter } from './routes/services.routes.js';
+import { workshopsRouter } from './routes/workshops.routes.js';
+import { eventsRouter } from './routes/events.routes.js';
 import { staffRouter } from './routes/staff.routes.js';
 import { apiLimiter } from './middlewares/rateLimit.js';
 
@@ -47,6 +49,8 @@ export function createApp(): Express {
   app.use('/me', meRouter);
   app.use('/plans', plansRouter);
   app.use('/services', servicesRouter);
+  app.use('/workshops', workshopsRouter);
+  app.use('/events', eventsRouter);
   app.use('/staff', staffRouter);
 
   app.use((_req, res) => {
