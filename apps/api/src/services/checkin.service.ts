@@ -7,7 +7,6 @@ import {
   type Badge,
   type CheckIn,
 } from '@prisma/client';
-import { differenceInCalendarDays, startOfWeek } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { CENTER_TIMEZONE, QR_CHECKIN_TTL_SECONDS } from '@atlas/shared';
 import { prisma } from '../lib/prisma.js';
@@ -90,17 +89,27 @@ export async function createCheckIn(opts: CreateCheckInOpts) {
   };
 }
 
+/** Días distintos (en zona Chile) con al menos un check-in dentro de la semana ISO actual. */
 async function countCheckInsThisWeek(userId: string): Promise<number> {
-  const now = toZonedTime(new Date(), CENTER_TIMEZONE);
-  const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // lunes ISO
-  // Cuenta días distintos (no check-ins totales) para evitar contar 2 entradas el mismo día
-  const rows = await prisma.$queryRaw<Array<{ day: Date }>>`
-    SELECT DISTINCT DATE(("occurredAt" AT TIME ZONE 'America/Santiago')) AS day
-    FROM "CheckIn"
-    WHERE "userId" = ${userId}
-      AND "occurredAt" >= ${weekStart}
-  `;
-  return rows.length;
+  const dayKeys = await distinctCheckInDayKeys(userId, 14);
+  const weekKeys = new Set(currentWeekKeys());
+  return dayKeys.filter((k) => weekKeys.has(k)).length;
+}
+
+/**
+ * Devuelve los días distintos (YYYY-MM-DD en zona Chile) con check-in,
+ * ordenados descendente. Computa en JS desde los timestamps reales para
+ * evitar el desfase de zona horaria del SQL DATE().
+ */
+async function distinctCheckInDayKeys(userId: string, maxDays: number): Promise<string[]> {
+  const rows = await prisma.checkIn.findMany({
+    where: { userId },
+    select: { occurredAt: true },
+    orderBy: { occurredAt: 'desc' },
+    take: 600,
+  });
+  const set = new Set(rows.map((r) => formatLocalDateKey(r.occurredAt)));
+  return [...set].sort().reverse().slice(0, maxDays);
 }
 
 // =====================================================
@@ -120,14 +129,13 @@ export async function getStreakSnapshot(userId: string): Promise<StreakSnapshot>
   const cached = await redis.get(`${STREAK_CACHE_PREFIX}${userId}`);
   if (cached) return JSON.parse(cached) as StreakSnapshot;
 
-  const [checkIns, subscription, total] = await Promise.all([
-    prisma.$queryRaw<Array<{ day: Date }>>`
-      SELECT DISTINCT DATE(("occurredAt" AT TIME ZONE 'America/Santiago')) AS day
-      FROM "CheckIn"
-      WHERE "userId" = ${userId}
-      ORDER BY day DESC
-      LIMIT 90
-    `,
+  const [rows, subscription, total] = await Promise.all([
+    prisma.checkIn.findMany({
+      where: { userId },
+      select: { occurredAt: true },
+      orderBy: { occurredAt: 'desc' },
+      take: 600,
+    }),
     prisma.subscription.findFirst({
       where: { userId, status: SubscriptionStatus.ACTIVE },
       orderBy: { endsAt: 'desc' },
@@ -136,58 +144,46 @@ export async function getStreakSnapshot(userId: string): Promise<StreakSnapshot>
     prisma.checkIn.count({ where: { userId } }),
   ]);
 
-  const dayKeys = checkIns.map((r) => formatLocalDateKey(r.day));
+  const daySet = new Set(rows.map((r) => formatLocalDateKey(r.occurredAt)));
+  const dayKeys = [...daySet].sort().reverse(); // descendente: hoy primero
   const todayKey = formatLocalDateKey(new Date());
 
-  // Racha actual: días consecutivos terminando hoy o ayer
+  // Racha actual: días consecutivos hacia atrás desde hoy (o ayer si aún no entrena hoy)
   let current = 0;
-  let cursor = new Date();
-  for (let i = 0; i < dayKeys.length; i++) {
-    const cursorKey = formatLocalDateKey(cursor);
-    const wantsToday = cursorKey === todayKey;
-    if (dayKeys[i] === cursorKey) {
-      current++;
-      cursor.setDate(cursor.getDate() - 1);
-    } else if (wantsToday) {
-      // permite que la racha siga viva si todavía no entrenó hoy pero sí ayer
-      cursor.setDate(cursor.getDate() - 1);
-    } else {
-      break;
-    }
+  let cursorKey = todayKey;
+  if (dayKeys[0] !== todayKey) {
+    cursorKey = shiftDayKey(todayKey, -1);
+  }
+  let idx = 0;
+  while (idx < dayKeys.length && dayKeys[idx] === cursorKey) {
+    current++;
+    idx++;
+    cursorKey = shiftDayKey(cursorKey, -1);
   }
 
-  // Racha más larga (en los últimos 90 días, suficiente para v1)
+  // Racha más larga: corrida máxima de días consecutivos
   let longest = 0;
   let run = 0;
   let prev: string | null = null;
-  for (const key of dayKeys.slice().reverse()) {
-    if (prev) {
-      const gap = daysBetween(prev, key);
-      if (gap === 1) run++;
-      else run = 1;
-    } else {
-      run = 1;
-    }
+  for (const key of [...dayKeys].reverse()) {
+    run = prev && shiftDayKey(prev, 1) === key ? run + 1 : 1;
     if (run > longest) longest = run;
     prev = key;
   }
 
   // Últimos 7 días para el gráfico de racha
-  const recent7Days: Array<{ date: string; checkedIn: boolean }> = [];
-  const setKeys = new Set(dayKeys);
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const key = formatLocalDateKey(d);
-    recent7Days.push({ date: key, checkedIn: setKeys.has(key) });
-  }
+  const recent7Days = [6, 5, 4, 3, 2, 1, 0].map((back) => {
+    const key = shiftDayKey(todayKey, -back);
+    return { date: key, checkedIn: daySet.has(key) };
+  });
 
-  const usedThisWeek = await countCheckInsThisWeek(userId);
+  const weekKeys = new Set(currentWeekKeys());
+  const usedThisWeek = dayKeys.filter((k) => weekKeys.has(k)).length;
 
   const snapshot: StreakSnapshot = {
     current,
     longest,
-    lastCheckInAt: checkIns[0] ? new Date(checkIns[0].day).toISOString() : null,
+    lastCheckInAt: rows[0] ? rows[0].occurredAt.toISOString() : null,
     thisWeek: { used: usedThisWeek, allowed: subscription?.plan.daysPerWeek ?? null },
     recent7Days,
     total,
@@ -205,8 +201,24 @@ function formatLocalDateKey(d: Date): string {
   return `${y}-${m}-${dd}`;
 }
 
-function daysBetween(a: string, b: string): number {
-  return differenceInCalendarDays(new Date(b), new Date(a));
+/** Desplaza una clave de día YYYY-MM-DD por N días (usando UTC para evitar DST). */
+function shiftDayKey(key: string, deltaDays: number): string {
+  const [y, m, d] = key.split('-').map(Number);
+  const dt = new Date(Date.UTC(y!, m! - 1, d!));
+  dt.setUTCDate(dt.getUTCDate() + deltaDays);
+  const yy = dt.getUTCFullYear();
+  const mm = String(dt.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(dt.getUTCDate()).padStart(2, '0');
+  return `${yy}-${mm}-${dd}`;
+}
+
+/** Las 7 claves de día (lunes a domingo) de la semana ISO actual en zona Chile. */
+function currentWeekKeys(): string[] {
+  const todayKey = formatLocalDateKey(new Date());
+  const local = toZonedTime(new Date(), CENTER_TIMEZONE);
+  const sinceMonday = (local.getDay() + 6) % 7; // 0 = lunes
+  const mondayKey = shiftDayKey(todayKey, -sinceMonday);
+  return [0, 1, 2, 3, 4, 5, 6].map((i) => shiftDayKey(mondayKey, i));
 }
 
 // =====================================================

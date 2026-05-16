@@ -1,4 +1,21 @@
-import { PrismaClient, PlanSegment, SessionPackVariant, ServiceType, UserRole } from '@prisma/client';
+import {
+  PrismaClient,
+  PlanSegment,
+  SessionPackVariant,
+  ServiceType,
+  UserRole,
+  SubscriptionStatus,
+  PaymentProvider,
+  PaymentMethod,
+  PaymentStatus,
+  PaymentTarget,
+  CheckInSource,
+  BookingStatus,
+  WorkshopEnrollmentStatus,
+  EventRsvpStatus,
+  UserSessionPackStatus,
+  SessionRedemptionStatus,
+} from '@prisma/client';
 import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -481,7 +498,272 @@ async function main() {
   });
   console.log('  ✓ 2 eventos especiales');
 
+  await seedDemoData();
+
   console.log('✨ Seed completado.');
+}
+
+// =====================================================
+// DATOS DE DEMO — para mostrar la app al cliente con todo "vivo"
+// =====================================================
+function dayAt(offset: number, hour = 12): Date {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  d.setHours(hour, 0, 0, 0);
+  return d;
+}
+
+async function seedDemoData() {
+  const DEMO_PASSWORD = 'Demo2026';
+  const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 12);
+
+  const demoEmails = [
+    'demo@atlas.local',
+    'carlos.demo@atlas.local',
+    'fernanda.demo@atlas.local',
+    'matias.demo@atlas.local',
+    'sofia.demo@atlas.local',
+  ];
+
+  // Limpieza idempotente: borrar usuarios demo (cascada) + sus pagos
+  const prev = await prisma.user.findMany({
+    where: { email: { in: demoEmails } },
+    select: { id: true },
+  });
+  const prevIds = prev.map((u) => u.id);
+  if (prevIds.length) {
+    await prisma.user.deleteMany({ where: { id: { in: prevIds } } });
+    await prisma.payment.deleteMany({ where: { userId: { in: prevIds } } });
+  }
+
+  // Catálogo necesario
+  const [eliteP, avanzadoP, inicialP, ascensoP, formacion3d] = await Promise.all([
+    prisma.plan.findUniqueOrThrow({ where: { code: 'ATLAS_ELITE' } }),
+    prisma.plan.findUniqueOrThrow({ where: { code: 'ATLAS_AVANZADO' } }),
+    prisma.plan.findUniqueOrThrow({ where: { code: 'ATLAS_INICIAL' } }),
+    prisma.plan.findUniqueOrThrow({ where: { code: 'ATLAS_ASCENSO' } }),
+    prisma.plan.findUniqueOrThrow({ where: { code: 'FORMACION_3D' } }),
+  ]);
+  const transformaPack = await prisma.sessionPack.findUniqueOrThrow({
+    where: { code: 'TRANSFORMA_8' },
+  });
+  const kine = await prisma.professional.findFirstOrThrow({
+    where: { serviceType: ServiceType.KINESIOLOGIA },
+  });
+  const trainer = await prisma.user.findFirstOrThrow({ where: { role: UserRole.TRAINER } });
+  const firstWorkshopSession = await prisma.workshopSession.findFirst({
+    where: { startsAt: { gte: new Date() } },
+    orderBy: { startsAt: 'asc' },
+  });
+  const openDay = await prisma.event.findFirst({
+    where: { isPublished: true, startsAt: { gte: new Date() } },
+    orderBy: { startsAt: 'asc' },
+  });
+  const recepcion = await prisma.user.findUnique({ where: { email: 'recepcion@atlas.local' } });
+
+  // ---------- Miembro estrella: Javiera Morales ----------
+  const star = await prisma.user.create({
+    data: {
+      email: 'demo@atlas.local',
+      passwordHash,
+      fullName: 'Javiera Morales',
+      rut: '186548723',
+      phone: '+56 9 8765 4321',
+      role: UserRole.MEMBER,
+      profile: {
+        create: { heightCm: 168, goal: 'masa_muscular', goalNote: 'Ganar fuerza y masa magra' },
+      },
+    },
+  });
+
+  // Suscripción Atlas Élite (empezó hace 26 días, vence en 4 → muestra el aviso de vencimiento)
+  const starPayment = await prisma.payment.create({
+    data: {
+      userId: star.id,
+      provider: PaymentProvider.MANUAL,
+      method: PaymentMethod.CARD_EXTERNAL,
+      providerTxId: `demo-sub-${star.id}`,
+      amountClp: eliteP.priceClp,
+      status: PaymentStatus.COMPLETED,
+      target: PaymentTarget.SUBSCRIPTION,
+      collectedById: recepcion?.id,
+      completedAt: dayAt(-26),
+    },
+  });
+  await prisma.subscription.create({
+    data: {
+      userId: star.id,
+      planId: eliteP.id,
+      status: SubscriptionStatus.ACTIVE,
+      startsAt: dayAt(-26),
+      endsAt: dayAt(4),
+      paymentId: starPayment.id,
+      createdAt: dayAt(-26),
+    },
+  });
+
+  // 12 check-ins consecutivos (racha actual = 12)
+  for (let i = 0; i < 12; i++) {
+    await prisma.checkIn.create({
+      data: {
+        userId: star.id,
+        occurredAt: dayAt(-i, 11),
+        source: i % 2 === 0 ? CheckInSource.SELF_QR : CheckInSource.STAFF_SCAN,
+      },
+    });
+  }
+
+  // Badges desbloqueados
+  const badges = await prisma.badge.findMany({
+    where: { code: { in: ['FIRST_CHECKIN', 'STREAK_7'] } },
+  });
+  for (const b of badges) {
+    await prisma.userBadge.create({
+      data: { userId: star.id, badgeId: b.id, unlockedAt: dayAt(-5) },
+    });
+  }
+
+  // Reserva de kinesiología próxima
+  const bookingStart = dayAt(3, 17);
+  const bookingEnd = new Date(bookingStart.getTime() + 30 * 60 * 1000);
+  await prisma.booking.create({
+    data: {
+      userId: star.id,
+      professionalId: kine.id,
+      serviceType: ServiceType.KINESIOLOGIA,
+      slotStart: bookingStart,
+      slotEnd: bookingEnd,
+      status: BookingStatus.BOOKED,
+      notes: 'Molestia leve en rodilla derecha tras entrenamiento de pierna.',
+    },
+  });
+
+  // Inscripción a un taller
+  if (firstWorkshopSession) {
+    await prisma.workshopEnrollment.create({
+      data: {
+        userId: star.id,
+        sessionId: firstWorkshopSession.id,
+        priceChargedClp: 0,
+        status: WorkshopEnrollmentStatus.BOOKED,
+      },
+    });
+  }
+
+  // RSVP a un evento
+  if (openDay) {
+    await prisma.eventRsvp.create({
+      data: {
+        userId: star.id,
+        eventId: openDay.id,
+        priceChargedClp: openDay.priceClp,
+        status: EventRsvpStatus.CONFIRMED,
+      },
+    });
+  }
+
+  // Session pack Atlas Transforma con 2 sesiones usadas
+  const packPayment = await prisma.payment.create({
+    data: {
+      userId: star.id,
+      provider: PaymentProvider.MANUAL,
+      method: PaymentMethod.TRANSFER,
+      providerTxId: `demo-pack-${star.id}`,
+      amountClp: transformaPack.priceClp,
+      status: PaymentStatus.COMPLETED,
+      target: PaymentTarget.SESSION_PACK,
+      collectedById: recepcion?.id,
+      completedAt: dayAt(0, 10),
+    },
+  });
+  const userPack = await prisma.userSessionPack.create({
+    data: {
+      userId: star.id,
+      sessionPackId: transformaPack.id,
+      paymentId: packPayment.id,
+      sessionsTotal: transformaPack.sessionsTotal,
+      sessionsRemaining: transformaPack.sessionsTotal - 2,
+      startsAt: dayAt(0),
+      expiresAt: dayAt(transformaPack.validityDays),
+      status: UserSessionPackStatus.ACTIVE,
+    },
+  });
+  // 1 sesión pasada (atendida) + 1 futura (agendada)
+  const pastRedemption = await prisma.sessionPackRedemption.create({
+    data: {
+      userSessionPackId: userPack.id,
+      trainerId: trainer.id,
+      scheduledAt: dayAt(-4, 18),
+      durationMin: transformaPack.sessionDurationMin,
+      status: SessionRedemptionStatus.ATTENDED,
+    },
+  });
+  await prisma.sessionParticipant.create({
+    data: { redemptionId: pastRedemption.id, userId: star.id },
+  });
+  const futureRedemption = await prisma.sessionPackRedemption.create({
+    data: {
+      userSessionPackId: userPack.id,
+      trainerId: trainer.id,
+      scheduledAt: dayAt(2, 18),
+      durationMin: transformaPack.sessionDurationMin,
+      status: SessionRedemptionStatus.SCHEDULED,
+    },
+  });
+  await prisma.sessionParticipant.create({
+    data: { redemptionId: futureRedemption.id, userId: star.id },
+  });
+
+  // ---------- Miembros de apoyo (pagos de hoy para la caja) ----------
+  const supporting = [
+    { email: 'carlos.demo@atlas.local', name: 'Carlos Tapia', rut: '205417896', plan: avanzadoP, method: PaymentMethod.CASH, checkinToday: false },
+    { email: 'fernanda.demo@atlas.local', name: 'Fernanda Ruiz', rut: '197654321', plan: inicialP, method: PaymentMethod.TRANSFER, checkinToday: true },
+    { email: 'matias.demo@atlas.local', name: 'Matías Bravo', rut: '213456789', plan: formacion3d, method: PaymentMethod.CASH, checkinToday: false },
+    { email: 'sofia.demo@atlas.local', name: 'Sofía Castro', rut: '188765432', plan: ascensoP, method: PaymentMethod.CARD_EXTERNAL, checkinToday: true },
+  ];
+
+  for (const m of supporting) {
+    const user = await prisma.user.create({
+      data: {
+        email: m.email,
+        passwordHash,
+        fullName: m.name,
+        rut: m.rut,
+        role: UserRole.MEMBER,
+        profile: { create: {} },
+      },
+    });
+    const payment = await prisma.payment.create({
+      data: {
+        userId: user.id,
+        provider: PaymentProvider.MANUAL,
+        method: m.method,
+        providerTxId: `demo-sub-${user.id}`,
+        amountClp: m.plan.priceClp,
+        status: PaymentStatus.COMPLETED,
+        target: PaymentTarget.SUBSCRIPTION,
+        collectedById: recepcion?.id,
+        completedAt: dayAt(0, 9 + supporting.indexOf(m)),
+      },
+    });
+    await prisma.subscription.create({
+      data: {
+        userId: user.id,
+        planId: m.plan.id,
+        status: SubscriptionStatus.ACTIVE,
+        startsAt: dayAt(0),
+        endsAt: dayAt(30),
+        paymentId: payment.id,
+      },
+    });
+    if (m.checkinToday) {
+      await prisma.checkIn.create({
+        data: { userId: user.id, occurredAt: dayAt(0, 10), source: CheckInSource.STAFF_SCAN },
+      });
+    }
+  }
+
+  console.log('  🎬 Datos de demo: 1 miembro estrella + 4 miembros + caja del día');
 }
 
 main()
