@@ -47,7 +47,8 @@ export const StaffCreateSessionPackSchema = z.object({
 export type StaffCreateSessionPackInput = z.infer<typeof StaffCreateSessionPackSchema>;
 
 export const StaffSearchSchema = z.object({
-  q: z.string().min(1, 'Búsqueda vacía'),
-  limit: z.coerce.number().int().min(1).max(50).default(15),
+  // q opcional: sin query se devuelven los miembros más recientes
+  q: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 export type StaffSearchInput = z.infer<typeof StaffSearchSchema>;

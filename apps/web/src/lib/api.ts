@@ -51,20 +51,32 @@ async function rawFetch(path: string, opts: Options = {}): Promise<Response> {
   });
 }
 
+// Dedupe de refresh: si ya hay uno en vuelo, todas las llamadas comparten
+// la misma promesa. Evita que React StrictMode (doble efecto en dev) o
+// múltiples 401 concurrentes disparen rotaciones de token en paralelo,
+// lo que activaría la detección de reuso en el backend y mataría la sesión.
+let refreshInFlight: Promise<boolean> | null = null;
+
 async function tryRefresh(): Promise<boolean> {
-  try {
-    const r = await rawFetch('/auth/refresh', {
-      method: 'POST',
-      skipAuth: true,
-      skipRefresh: true,
-    });
-    if (!r.ok) return false;
-    const data = (await r.json()) as { accessToken: string };
-    accessToken = data.accessToken;
-    return true;
-  } catch {
-    return false;
-  }
+  if (refreshInFlight) return refreshInFlight;
+  refreshInFlight = (async () => {
+    try {
+      const r = await rawFetch('/auth/refresh', {
+        method: 'POST',
+        skipAuth: true,
+        skipRefresh: true,
+      });
+      if (!r.ok) return false;
+      const data = (await r.json()) as { accessToken: string };
+      accessToken = data.accessToken;
+      return true;
+    } catch {
+      return false;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+  return refreshInFlight;
 }
 
 export async function apiFetch<T = unknown>(path: string, opts: Options = {}): Promise<T> {

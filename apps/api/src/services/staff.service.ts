@@ -23,11 +23,42 @@ export class StaffError extends Error {
   }
 }
 
-/** Búsqueda libre: email, RUT (con o sin formato) o partes del nombre. */
-export async function searchMembers(q: string, limit: number) {
-  const cleanQ = q.trim();
-  const cleanRutCandidate = cleanQ.replace(/[.\s-]/g, '').toUpperCase();
+const MEMBER_SELECT = {
+  id: true,
+  email: true,
+  fullName: true,
+  rut: true,
+  phone: true,
+  role: true,
+  status: true,
+  createdAt: true,
+  subscriptions: {
+    where: { status: SubscriptionStatus.ACTIVE },
+    orderBy: { endsAt: 'desc' as const },
+    take: 1,
+    select: { id: true, endsAt: true, plan: { select: { code: true, name: true } } },
+  },
+} as const;
 
+/**
+ * Búsqueda de miembros.
+ * - Sin query: devuelve los miembros más recientes (rol MEMBER) para que
+ *   recepción los vea sin escribir.
+ * - Con query: busca por email, RUT (con o sin formato) o partes del nombre.
+ */
+export async function searchMembers(q: string | undefined, limit: number) {
+  const cleanQ = (q ?? '').trim();
+
+  if (cleanQ.length === 0) {
+    return prisma.user.findMany({
+      where: { deletedAt: null, role: 'MEMBER' },
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      select: MEMBER_SELECT,
+    });
+  }
+
+  const cleanRutCandidate = cleanQ.replace(/[.\s-]/g, '').toUpperCase();
   return prisma.user.findMany({
     where: {
       deletedAt: null,
@@ -39,22 +70,7 @@ export async function searchMembers(q: string, limit: number) {
     },
     take: limit,
     orderBy: { createdAt: 'desc' },
-    select: {
-      id: true,
-      email: true,
-      fullName: true,
-      rut: true,
-      phone: true,
-      role: true,
-      status: true,
-      createdAt: true,
-      subscriptions: {
-        where: { status: SubscriptionStatus.ACTIVE },
-        orderBy: { endsAt: 'desc' },
-        take: 1,
-        select: { id: true, endsAt: true, plan: { select: { code: true, name: true } } },
-      },
-    },
+    select: MEMBER_SELECT,
   });
 }
 

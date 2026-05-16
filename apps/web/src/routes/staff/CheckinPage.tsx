@@ -77,10 +77,10 @@ export function CheckinPage() {
 function SearchPane() {
   const [q, setQ] = useState('');
   const qc = useQueryClient();
+  // Siempre consulta: sin texto muestra miembros recientes.
   const { data, isFetching } = useQuery({
     queryKey: ['staff', 'members', 'search', q],
     queryFn: () => apiFetch<{ members: Member[] }>(`/staff/members/search?q=${encodeURIComponent(q)}`),
-    enabled: q.trim().length >= 2,
   });
 
   const mutation = useMutation({
@@ -137,11 +137,13 @@ function SearchPane() {
         />
       </div>
 
-      <div className="mt-4 min-h-[100px]">
-        {q.trim().length < 2 ? (
-          <p className="text-sm text-atlas-white/40">Escribe al menos 2 caracteres.</p>
-        ) : isFetching ? (
-          <p className="text-sm text-atlas-white/40">Buscando…</p>
+      <p className="mt-4 mb-2 text-xs font-bold uppercase tracking-[0.3em] text-atlas-white/50">
+        {q.trim().length > 0 ? 'Resultados' : 'Miembros recientes'}
+      </p>
+
+      <div className="min-h-[100px]">
+        {isFetching && (data?.members.length ?? 0) === 0 ? (
+          <p className="text-sm text-atlas-white/40">Cargando…</p>
         ) : data?.members.length === 0 ? (
           <p className="text-sm text-atlas-white/40">Sin resultados.</p>
         ) : (

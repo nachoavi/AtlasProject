@@ -137,20 +137,43 @@ function StepMember({ onNext }: { onNext: (m: Member) => void }) {
   const [q, setQ] = useState('');
   const [creating, setCreating] = useState(false);
 
+  // Siempre consulta: sin texto devuelve los miembros más recientes.
   const { data, isFetching } = useQuery({
     queryKey: ['staff', 'members', 'search', q],
     queryFn: () => apiFetch<{ members: Member[] }>(`/staff/members/search?q=${encodeURIComponent(q)}`),
-    enabled: q.trim().length >= 2,
   });
 
   if (creating) return <CreateMemberForm onCreated={onNext} onCancel={() => setCreating(false)} />;
+
+  const members = data?.members ?? [];
+  const isSearching = q.trim().length > 0;
 
   return (
     <section>
       <h2 className="font-display text-3xl uppercase">¿Quién se inscribe?</h2>
       <p className="mt-2 text-sm text-atlas-white/60">
-        Busca por RUT, email o nombre. Si no existe, crea el miembro al toque.
+        Elige un miembro de la lista o búscalo por RUT, email o nombre.
       </p>
+
+      {/* CTA prominente para registrar un miembro nuevo */}
+      <button
+        type="button"
+        onClick={() => setCreating(true)}
+        className="mt-5 flex w-full items-center justify-between gap-4 rounded-2xl border-2 border-dashed border-atlas-coral/60 bg-atlas-coral/10 px-5 py-4 text-left transition-colors hover:bg-atlas-coral/20"
+      >
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-atlas-coral text-atlas-white">
+            <UserPlus size={20} />
+          </span>
+          <div>
+            <p className="font-display text-lg uppercase text-atlas-white">Registrar nuevo miembro</p>
+            <p className="text-xs text-atlas-white/60">
+              ¿Es la primera vez del cliente? Créale la cuenta aquí.
+            </p>
+          </div>
+        </div>
+        <span className="font-display text-2xl text-atlas-coral">+</span>
+      </button>
 
       <div className="mt-6 flex items-center gap-3 rounded-2xl bg-atlas-ink px-4 py-3 ring-1 ring-atlas-white/10 focus-within:ring-atlas-yellow">
         <Search size={18} className="text-atlas-white/40" />
@@ -158,20 +181,24 @@ function StepMember({ onNext }: { onNext: (m: Member) => void }) {
           type="text"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Buscar miembro…"
+          placeholder="Buscar por nombre, RUT o email…"
           autoFocus
           className="flex-1 bg-transparent text-atlas-white outline-none placeholder:text-atlas-white/30"
         />
       </div>
 
-      <div className="mt-4 min-h-[100px]">
-        {q.trim().length < 2 ? (
-          <p className="text-sm text-atlas-white/40">Escribe al menos 2 caracteres para buscar.</p>
-        ) : isFetching ? (
-          <p className="text-sm text-atlas-white/40">Buscando…</p>
-        ) : data?.members.length === 0 ? (
+      <p className="mt-4 mb-2 text-xs font-bold uppercase tracking-[0.3em] text-atlas-white/50">
+        {isSearching ? 'Resultados' : 'Miembros recientes'}
+      </p>
+
+      <div className="min-h-[100px]">
+        {isFetching && members.length === 0 ? (
+          <p className="text-sm text-atlas-white/40">Cargando…</p>
+        ) : members.length === 0 ? (
           <div className="flex flex-col items-start gap-3 rounded-2xl bg-atlas-ink p-6">
-            <p className="text-sm">No encontramos a nadie con "{q}".</p>
+            <p className="text-sm">
+              {isSearching ? `No encontramos a nadie con "${q}".` : 'Aún no hay miembros registrados.'}
+            </p>
             <button
               type="button"
               onClick={() => setCreating(true)}
@@ -182,7 +209,7 @@ function StepMember({ onNext }: { onNext: (m: Member) => void }) {
           </div>
         ) : (
           <ul className="flex flex-col gap-2">
-            {data?.members.map((m) => (
+            {members.map((m) => (
               <li key={m.id}>
                 <button
                   type="button"
@@ -210,16 +237,6 @@ function StepMember({ onNext }: { onNext: (m: Member) => void }) {
           </ul>
         )}
       </div>
-
-      {data && data.members.length > 0 && (
-        <button
-          type="button"
-          onClick={() => setCreating(true)}
-          className="mt-4 inline-flex items-center gap-2 text-sm text-atlas-yellow hover:underline"
-        >
-          <UserPlus size={14} /> ¿No está en la lista? Crear nuevo
-        </button>
-      )}
     </section>
   );
 }
