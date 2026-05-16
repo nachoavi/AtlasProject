@@ -9,6 +9,7 @@ import { BookingsPage } from './routes/app/BookingsPage';
 import { NewBookingPage } from './routes/app/NewBookingPage';
 import { WorkshopsPage } from './routes/app/WorkshopsPage';
 import { EventsPage } from './routes/app/EventsPage';
+import { SessionPacksPage } from './routes/app/SessionPacksPage';
 import { RequireAuth } from './components/auth/RequireAuth';
 import { RequireRole } from './components/auth/RequireRole';
 import { StaffLayout } from './routes/staff/StaffLayout';
@@ -70,6 +71,14 @@ export function App() {
         element={
           <RequireAuth>
             <EventsPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/app/sesiones"
+        element={
+          <RequireAuth>
+            <SessionPacksPage />
           </RequireAuth>
         }
       />

@@ -20,6 +20,15 @@ import {
   myWorkshopEnrollments,
 } from '../services/workshop.service.js';
 import { EventError, cancelRsvp, myRsvps, rsvpEvent } from '../services/event.service.js';
+import {
+  SessionPackError,
+  cancelRedemption,
+  listTrainers,
+  myActivePacks,
+  myPastSessions,
+  myUpcomingSessions,
+  redeemSession,
+} from '../services/session-pack.service.js';
 import { validateBody } from '../middlewares/validate.js';
 
 export const meRouter: Router = Router();
@@ -254,6 +263,85 @@ meRouter.delete('/event-rsvps/:id', async (req, res, next) => {
       res.status(status).json({ error: err.code, message: err.message });
       return;
     }
+    next(err);
+  }
+});
+
+// =====================================================
+// SESSION PACKS — Atlas Legión y Atlas Transforma
+// =====================================================
+
+const RedeemSessionSchema = z.object({
+  scheduledAt: z.coerce.date(),
+  trainerId: z.string().cuid(),
+  participants: z
+    .array(
+      z.object({
+        userId: z.string().cuid().optional(),
+        guestName: z.string().trim().min(2).max(80).optional(),
+      }),
+    )
+    .max(2)
+    .optional(),
+});
+
+meRouter.get('/session-packs', async (req, res, next) => {
+  try {
+    const [packs, upcoming, past] = await Promise.all([
+      myActivePacks(req.user!.sub),
+      myUpcomingSessions(req.user!.sub),
+      myPastSessions(req.user!.sub),
+    ]);
+    res.json({ packs, upcomingSessions: upcoming, pastSessions: past });
+  } catch (err) {
+    next(err);
+  }
+});
+
+meRouter.post(
+  '/session-packs/:id/redeem',
+  validateBody(RedeemSessionSchema),
+  async (req, res, next) => {
+    try {
+      const result = await redeemSession(req.user!.sub, req.params.id!, req.body);
+      res.status(201).json(result);
+    } catch (err) {
+      if (err instanceof SessionPackError) {
+        const status =
+          err.code === 'PACK_NOT_FOUND' || err.code === 'TRAINER_NOT_FOUND'
+            ? 404
+            : err.code === 'FORBIDDEN'
+              ? 403
+              : err.code === 'TRAINER_BUSY'
+                ? 409
+                : 400;
+        res.status(status).json({ error: err.code, message: err.message });
+        return;
+      }
+      next(err);
+    }
+  },
+);
+
+meRouter.delete('/sessions/:id', async (req, res, next) => {
+  try {
+    const result = await cancelRedemption(req.user!.sub, req.params.id!);
+    res.json(result);
+  } catch (err) {
+    if (err instanceof SessionPackError) {
+      const status =
+        err.code === 'REDEMPTION_NOT_FOUND' ? 404 : err.code === 'FORBIDDEN' ? 403 : 400;
+      res.status(status).json({ error: err.code, message: err.message });
+      return;
+    }
+    next(err);
+  }
+});
+
+meRouter.get('/trainers', async (_req, res, next) => {
+  try {
+    res.json({ trainers: await listTrainers() });
+  } catch (err) {
     next(err);
   }
 });

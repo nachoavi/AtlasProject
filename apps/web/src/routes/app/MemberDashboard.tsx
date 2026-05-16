@@ -143,7 +143,7 @@ export function MemberDashboard() {
               Reservas
             </Link>
           </div>
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
             <Link
               to="/app/talleres"
               className="text-xs uppercase tracking-wider text-atlas-yellow hover:underline"
@@ -155,6 +155,12 @@ export function MemberDashboard() {
               className="text-xs uppercase tracking-wider text-atlas-yellow hover:underline"
             >
               Eventos →
+            </Link>
+            <Link
+              to="/app/sesiones"
+              className="text-xs uppercase tracking-wider text-atlas-yellow hover:underline"
+            >
+              Mis sesiones →
             </Link>
           </div>
         </div>
