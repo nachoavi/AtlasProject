@@ -25,9 +25,14 @@ export function LoginPage() {
     setSubmitting(true);
     try {
       const { user } = await login(data);
-      const fallback = user.role === 'STAFF' || user.role === 'ADMIN' ? '/staff' : '/app';
-      const next = (location.state as { from?: string } | null)?.from ?? fallback;
-      navigate(next, { replace: true });
+      const isStaff = user.role === 'STAFF' || user.role === 'ADMIN';
+      const home = isStaff ? '/staff' : '/app';
+      // Solo se respeta `from` si pertenece al área del rol — evita que un
+      // miembro caiga en /staff (o viceversa) por un `from` heredado de la
+      // sesión anterior.
+      const from = (location.state as { from?: string } | null)?.from ?? '';
+      const allowedPrefix = isStaff ? '/staff' : '/app';
+      navigate(from.startsWith(allowedPrefix) ? from : home, { replace: true });
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.code === 'INVALID_CREDENTIALS') {

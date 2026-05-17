@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import type { LoginInput, RegisterInput } from '@atlas/shared';
 import { apiFetch, bootstrapSession, onUnauthenticatedSetter, setAccessToken } from '../lib/api';
 
@@ -27,11 +28,15 @@ type AuthResponse = { user: AuthUser; accessToken: string };
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   const clearAuth = useCallback(() => {
     setAccessToken(null);
     setUser(null);
-  }, []);
+    // Limpia el cache de queries para que los datos de un usuario no
+    // se filtren a la siguiente sesión.
+    queryClient.clear();
+  }, [queryClient]);
 
   const fetchMe = useCallback(async () => {
     try {
