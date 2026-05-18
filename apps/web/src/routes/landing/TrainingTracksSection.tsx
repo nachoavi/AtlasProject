@@ -40,8 +40,8 @@ export function TrainingTracksSection() {
               {LEGION_PERKS.map((perk) => (
                 <motion.li
                   key={perk}
-                  initial={{ x: -10 }}
-                  whileInView={{ x: 0 }}
+                  initial={{ y: 8 }}
+                  whileInView={{ y: 0 }}
                   viewport={{ once: true, amount: 0.1 }}
                   transition={{ delay: 0.05 }}
                   className="flex items-start gap-3 text-sm"
@@ -87,8 +87,8 @@ export function TrainingTracksSection() {
               {TRANSFORMA_PERKS.map((perk) => (
                 <motion.li
                   key={perk}
-                  initial={{ x: 10 }}
-                  whileInView={{ x: 0 }}
+                  initial={{ y: 8 }}
+                  whileInView={{ y: 0 }}
                   viewport={{ once: true, amount: 0.1 }}
                   className="flex items-start gap-3 text-sm text-atlas-white/85"
                 >
