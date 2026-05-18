@@ -15,7 +15,7 @@ export function ZonesSection() {
     <section id="zonas" className="relative isolate bg-atlas-black py-24">
       <div className="mx-auto max-w-7xl px-6">
         <SectionLabel number="01" title="Zonas de entrenamiento" />
-        <h2 className="mt-4 max-w-3xl font-display text-5xl uppercase leading-[0.95] sm:text-7xl">
+        <h2 className="mt-4 max-w-3xl font-display text-4xl uppercase leading-tight sm:text-7xl sm:leading-[0.95]">
           Cinco disciplinas, <span className="text-atlas-yellow">un solo lugar.</span>
         </h2>
         <p className="mt-4 max-w-xl text-atlas-white/60">

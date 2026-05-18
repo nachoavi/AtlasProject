@@ -55,8 +55,8 @@ export function HeroSection() {
       {/* Hero principal — split asimétrico */}
       <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-8 px-6 pb-16 pt-8 lg:grid-cols-[1.2fr_0.8fr] lg:gap-0 lg:pt-16">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ y: 24 }}
+          animate={{ y: 0 }}
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           className="relative z-[3]"
         >
@@ -65,11 +65,10 @@ export function HeroSection() {
             La Unión · Los Ríos
           </p>
 
-          <h1 className="mt-6 font-display text-[clamp(3.5rem,11vw,9rem)] uppercase leading-[0.85] tracking-tight">
+          <h1 className="mt-6 font-display text-[clamp(2.75rem,12vw,9rem)] uppercase leading-[0.95] tracking-tight">
             Carga{' '}
-            <span className="relative inline-block">
-              <span className="relative z-[1] text-atlas-black">tu mundo</span>
-              <span className="absolute inset-x-[-8px] inset-y-2 -z-0 -skew-y-2 bg-atlas-yellow" />
+            <span className="box-decoration-clone bg-atlas-yellow px-2 text-atlas-black [-webkit-box-decoration-break:clone]">
+              tu mundo
             </span>
           </h1>
 
@@ -107,8 +106,8 @@ export function HeroSection() {
         {/* Lado derecho: estatua + bloque amarillo */}
         <div className="relative h-[420px] lg:h-[600px]">
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ scale: 0.95 }}
+            animate={{ scale: 1 }}
             transition={{ duration: 1, delay: 0.2 }}
             className="absolute right-0 top-0 h-full w-[85%] -skew-x-[6deg] bg-atlas-yellow"
           />

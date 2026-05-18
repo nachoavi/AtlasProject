@@ -19,7 +19,7 @@ export function ScheduleSection() {
       <div className="mx-auto grid max-w-7xl items-start gap-12 px-6 lg:grid-cols-[1fr_1fr]">
         <div>
           <SectionLabel number="07" title="Horarios + ubicación" inverse />
-          <h2 className="mt-4 font-display text-5xl uppercase leading-[0.9] sm:text-7xl">
+          <h2 className="mt-4 font-display text-4xl uppercase leading-tight sm:text-7xl sm:leading-[0.9]">
             Estamos en <br />
             <span className="text-atlas-coral">La Unión.</span>
           </h2>

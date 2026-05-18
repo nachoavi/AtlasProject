@@ -12,7 +12,7 @@ export function PlansSection() {
         <div className="grid items-end gap-6 sm:grid-cols-[1fr_auto]">
           <div>
             <SectionLabel number="02" title="Planes mensuales" />
-            <h2 className="mt-4 max-w-3xl font-display text-5xl uppercase leading-[0.95] sm:text-7xl">
+            <h2 className="mt-4 max-w-3xl font-display text-4xl uppercase leading-tight sm:text-7xl sm:leading-[0.95]">
               Elige <span className="text-atlas-yellow">tu ritmo.</span>
             </h2>
           </div>

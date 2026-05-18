@@ -9,7 +9,7 @@ export function WorkshopsSection() {
         <div className="grid items-end gap-6 sm:grid-cols-[1fr_auto]">
           <div>
             <SectionLabel number="05" title="Clases dirigidas" />
-            <h2 className="mt-4 max-w-3xl font-display text-5xl uppercase leading-[0.95] sm:text-7xl">
+            <h2 className="mt-4 max-w-3xl font-display text-4xl uppercase leading-tight sm:text-7xl sm:leading-[0.95]">
               Talleres con <span className="text-atlas-yellow">instructor.</span>
             </h2>
           </div>

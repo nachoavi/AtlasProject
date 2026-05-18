@@ -29,7 +29,9 @@ export function WorkshopCard({
     >
       <div>
         <p className="font-sans text-xs font-bold uppercase tracking-[0.3em]">Taller</p>
-        <h3 className="mt-2 font-display text-6xl uppercase leading-[0.85]">{workshop.name}</h3>
+        <h3 className="mt-2 break-words font-display text-4xl uppercase leading-[0.95] sm:text-6xl sm:leading-[0.85]">
+          {workshop.name}
+        </h3>
       </div>
 
       <div className="relative z-[1] flex items-end justify-between">

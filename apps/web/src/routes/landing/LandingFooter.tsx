@@ -16,7 +16,7 @@ export function LandingFooter() {
 
       <div className="mx-auto grid max-w-7xl gap-12 px-6 py-20 lg:grid-cols-[1.4fr_1fr_1fr]">
         <div>
-          <h3 className="font-display text-6xl uppercase leading-[0.85] sm:text-7xl">
+          <h3 className="font-display text-5xl uppercase leading-tight sm:text-7xl sm:leading-[0.85]">
             ¿Listo para <br />
             <span className="text-atlas-yellow">cargar?</span>
           </h3>

@@ -16,8 +16,8 @@ export function StatueSilhouette({
 }) {
   return (
     <motion.svg
-      initial={{ opacity: 0, scale: 0.96, x: 30 }}
-      animate={{ opacity: 1, scale: 1, x: 0 }}
+      initial={{ scale: 0.96, x: 24 }}
+      animate={{ scale: 1, x: 0 }}
       transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
       viewBox="0 0 320 480"
       xmlns="http://www.w3.org/2000/svg"

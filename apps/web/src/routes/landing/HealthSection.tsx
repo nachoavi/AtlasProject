@@ -15,7 +15,7 @@ export function HealthSection() {
       <div className="mx-auto max-w-7xl px-6">
         <SectionLabel number="06" title="Servicios profesionales" inverse />
         <div className="mt-4 grid items-end gap-6 sm:grid-cols-[1fr_auto]">
-          <h2 className="max-w-3xl font-display text-5xl uppercase leading-[0.95] sm:text-7xl">
+          <h2 className="max-w-3xl font-display text-4xl uppercase leading-tight sm:text-7xl sm:leading-[0.95]">
             Tu cuerpo, <br />
             <span className="bg-atlas-yellow px-3 leading-none">acompañado.</span>
           </h2>
