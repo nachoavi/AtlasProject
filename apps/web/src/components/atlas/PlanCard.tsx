@@ -31,7 +31,7 @@ export function PlanCard({ plan, featured = false }: { plan: PlanInfo; featured?
 
       <header className="relative z-[1]">
         <p className="font-sans text-xs font-bold uppercase tracking-[0.3em]">Atlas</p>
-        <h3 className="mt-1 font-display text-5xl uppercase leading-[0.85]">
+        <h3 className="mt-1 break-words font-display text-[2rem] uppercase leading-[0.95] sm:text-5xl sm:leading-[0.85]">
           {plan.shortName}
         </h3>
       </header>

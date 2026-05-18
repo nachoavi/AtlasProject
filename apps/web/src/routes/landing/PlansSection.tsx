@@ -32,7 +32,7 @@ export function PlansSection() {
           <div className="grid items-start gap-6 sm:grid-cols-[1fr_auto]">
             <div>
               <SectionLabel number="02b" title="Para estudiantes" />
-              <h3 className="mt-3 font-display text-4xl uppercase leading-[0.9] sm:text-5xl">
+              <h3 className="mt-3 font-display text-[2rem] uppercase leading-tight sm:text-5xl sm:leading-[0.9]">
                 Atlas <span className="text-atlas-yellow">En Formación</span>
               </h3>
               <p className="mt-3 max-w-md text-sm text-atlas-white/60">
