@@ -44,7 +44,7 @@ export function QrCheckinPage() {
               size={256}
               level="M"
               marginSize={0}
-              fgColor="#0A0A0A"
+              fgColor="#000000"
               bgColor="#FFFFFF"
             />
           ) : (

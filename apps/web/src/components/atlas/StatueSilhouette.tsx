@@ -90,7 +90,7 @@ export function StatueSilhouette({
       {/* Sombras de definición muscular */}
       <path
         d="M 130 222 Q 160 240 190 222 L 188 270 Q 160 280 132 270 Z"
-        fill="#0A0A0A"
+        fill="#000000"
         opacity="0.15"
       />
     </motion.svg>

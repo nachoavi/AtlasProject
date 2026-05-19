@@ -8,10 +8,10 @@ export default {
     extend: {
       colors: {
         atlas: {
-          yellow: '#E5F000',
-          'yellow-pure': '#FFE600',
-          black: '#0A0A0A',
-          ink: '#171717',
+          yellow: '#DAD803',
+          'yellow-pure': '#DAD803',
+          black: '#000000',
+          ink: '#141414',
           white: '#FFFFFF',
           coral: '#F06A6A',
           'coral-hover': '#E45555',
@@ -25,12 +25,12 @@ export default {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
       backgroundImage: {
-        'atlas-gradient': 'linear-gradient(135deg, #E6378C, #F77F2E, #FFE600)',
+        'atlas-gradient': 'linear-gradient(135deg, #E6378C, #F77F2E, #DAD803)',
         'atlas-ring':
-          'conic-gradient(from 180deg, #E6378C, #F77F2E, #FFE600, #E6378C)',
+          'conic-gradient(from 180deg, #E6378C, #F77F2E, #DAD803, #E6378C)',
       },
       boxShadow: {
-        'atlas-glow': '0 0 40px rgba(229, 240, 0, 0.3)',
+        'atlas-glow': '0 0 40px rgba(218, 216, 3, 0.3)',
       },
       animation: {
         'spin-slow': 'spin 8s linear infinite',

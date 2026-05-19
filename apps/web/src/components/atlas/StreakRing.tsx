@@ -30,7 +30,7 @@ export function StreakRing({
             <linearGradient id="streak-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#E6378C" />
               <stop offset="50%" stopColor="#F77F2E" />
-              <stop offset="100%" stopColor="#FFE600" />
+              <stop offset="100%" stopColor="#DAD803" />
             </linearGradient>
           </defs>
           {/* fondo del aro */}
