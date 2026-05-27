@@ -22,9 +22,9 @@ export function WorkshopCard({
       transition={{ duration: 0.5 }}
       whileHover={{ rotate: -0.5, scale: 1.02 }}
       className={cn(
-        'group relative isolate flex aspect-square flex-col justify-between overflow-hidden',
+        'group relative isolate flex flex-col justify-between overflow-hidden',
         'rounded-3xl bg-atlas-yellow p-8 text-atlas-black',
-        'transition-shadow duration-300 hover:shadow-atlas-glow',
+        'min-h-[280px] transition-shadow duration-300 hover:shadow-atlas-glow',
       )}
     >
       <div>
@@ -40,10 +40,11 @@ export function WorkshopCard({
           <p className="mt-3 font-display text-sm uppercase tracking-wider">
             {workshop.durationLabel} · cupos limitados
           </p>
+          <span className="mt-4 inline-flex items-center gap-1 font-sans text-xs font-semibold uppercase tracking-wider transition-colors group-hover:text-atlas-black/60">
+            Agendar hora
+            <ArrowUpRight size={14} strokeWidth={2.5} />
+          </span>
         </div>
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-atlas-black text-atlas-yellow transition-transform group-hover:translate-x-1 group-hover:-translate-y-1">
-          <ArrowUpRight size={22} strokeWidth={2.5} />
-        </span>
       </div>
 
       {/* Silueta decorativa de fondo */}

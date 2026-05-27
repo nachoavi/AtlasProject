@@ -11,15 +11,15 @@ const ICONS: Record<string, ReactNode> = {
 
 export function HealthSection() {
   return (
-    <section id="salud" className="relative isolate bg-white py-24 text-atlas-black">
+    <section id="salud" className="relative isolate bg-atlas-black py-24">
       <div className="mx-auto max-w-7xl px-6">
-        <SectionLabel number="06" title="Servicios profesionales" inverse />
+        <SectionLabel number="06" title="Servicios profesionales" />
         <div className="mt-4 grid items-end gap-6 sm:grid-cols-[1fr_auto]">
           <h2 className="max-w-3xl font-display text-4xl uppercase leading-tight sm:text-7xl sm:leading-[0.95]">
             Tu cuerpo, <br />
-            <span className="bg-atlas-yellow px-3 leading-none">acompañado.</span>
+            <span className="bg-atlas-yellow px-3 leading-none text-atlas-black">acompañado.</span>
           </h2>
-          <p className="max-w-xs text-sm text-atlas-black/60 sm:text-right">
+          <p className="max-w-xs text-sm text-atlas-white/60 sm:text-right">
             Agenda horas online con kinesiólogo, podólogo o nutricionista. Algunos planes incluyen
             evaluación inicial gratuita.
           </p>
@@ -30,16 +30,18 @@ export function HealthSection() {
             <a
               key={service.code}
               href={`/servicios/${service.code.toLowerCase()}`}
-              className="group flex flex-col gap-6 rounded-2xl border-2 border-atlas-black/10 p-8 transition-all hover:border-atlas-coral hover:bg-atlas-black hover:text-atlas-white"
+              className="group flex flex-col gap-6 rounded-2xl border-2 border-atlas-white/10 bg-atlas-ink p-8 transition-all hover:border-atlas-yellow"
             >
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-atlas-yellow text-atlas-black transition-transform group-hover:rotate-[10deg]">
                 {ICONS[service.code]}
               </div>
               <div>
-                <h3 className="font-display text-3xl uppercase">{service.name}</h3>
-                <p className="mt-3 text-sm leading-relaxed opacity-80">{service.description}</p>
+                <h3 className="font-display text-3xl uppercase text-atlas-white">{service.name}</h3>
+                <p className="mt-3 text-sm leading-relaxed text-atlas-white/70">
+                  {service.description}
+                </p>
               </div>
-              <span className="mt-auto inline-flex items-center gap-2 font-sans text-xs uppercase tracking-wider text-atlas-coral">
+              <span className="mt-auto inline-flex items-center gap-2 font-sans text-xs uppercase tracking-wider text-atlas-yellow">
                 Agendar hora →
               </span>
             </a>

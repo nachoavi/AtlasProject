@@ -13,7 +13,11 @@ export function PlansSection() {
           <div>
             <SectionLabel number="02" title="Planes mensuales" />
             <h2 className="mt-4 max-w-3xl font-display text-4xl uppercase leading-tight sm:text-7xl sm:leading-[0.95]">
-              Elige <span className="text-atlas-yellow">tu ritmo.</span>
+              Elige{' '}
+              <span className="box-decoration-clone bg-atlas-yellow px-2 text-atlas-black [-webkit-box-decoration-break:clone]">
+                tu
+              </span>{' '}
+              ritmo.
             </h2>
           </div>
           <p className="max-w-xs text-sm text-atlas-white/60 sm:text-right">
