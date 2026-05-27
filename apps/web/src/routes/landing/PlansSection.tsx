@@ -27,7 +27,7 @@ export function PlansSection() {
 
         <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {generalPlans.map((plan) => (
-            <PlanCard key={plan.code} plan={plan} featured={plan.code === 'ATLAS_ASCENSO'} />
+            <PlanCard key={plan.code} plan={plan} featured={plan.code === 'ATLAS_ELITE'} />
           ))}
         </div>
 
