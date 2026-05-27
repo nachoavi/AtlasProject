@@ -14,8 +14,36 @@
 
   /* Selección con accent Atlas */
   ::selection {
-    background-color: #dad803;
+    background-color: #dfff00;
     color: #000000;
+  }
+}
+
+@layer utilities {
+  /* Franja diagonal amarillo/negro — borde lateral de secciones (Stitch design) */
+  .stripe-y {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      #dfff00,
+      #dfff00 5px,
+      #000000 5px,
+      #000000 10px
+    );
+    width: 15px;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+  }
+
+  /* Tipografía hero condensada con escala vertical — replica el Oswald del Stitch */
+  .font-hero {
+    font-family: 'Oswald', system-ui, sans-serif;
+    text-transform: uppercase;
+    line-height: 0.88;
+    letter-spacing: -0.03em;
+    transform: scaleY(1.12);
+    transform-origin: bottom left;
+    display: block;
   }
 }
 

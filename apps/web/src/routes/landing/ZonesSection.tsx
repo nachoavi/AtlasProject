@@ -32,7 +32,10 @@ const ZONES = [
 
 export function ZonesSection() {
   return (
-    <section id="zonas" className="relative isolate bg-atlas-black py-24">
+    <section id="zonas" className="relative isolate overflow-hidden bg-atlas-black py-24">
+      {/* Franjas diagonales laterales — lenguaje visual Stitch */}
+      <div className="stripe-y left-0" aria-hidden="true" />
+      <div className="stripe-y right-0" aria-hidden="true" />
       <div className="mx-auto max-w-7xl px-6">
         <SectionLabel number="01" title="Zonas de entrenamiento" />
         <h2 className="mt-4 max-w-3xl font-display text-4xl uppercase leading-tight sm:text-7xl sm:leading-[0.95]">

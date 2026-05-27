@@ -8,20 +8,20 @@ export default {
     extend: {
       colors: {
         atlas: {
-          yellow: '#DAD803',
-          'yellow-pure': '#DAD803',
+          yellow: '#DFFF00',
+          'yellow-pure': '#DFFF00',
           black: '#000000',
           ink: '#141414',
           white: '#FFFFFF',
-          coral: '#F06A6A',
-          'coral-hover': '#E45555',
+          coral: '#FF007F',
+          'coral-hover': '#D60070',
           lime: '#7DDE1F',
           success: '#2E9D5C',
           danger: '#E5484D',
         },
       },
       fontFamily: {
-        display: ['"Archivo Black"', 'system-ui', 'sans-serif'],
+        display: ['"Oswald"', 'system-ui', 'sans-serif'],
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
       backgroundImage: {
